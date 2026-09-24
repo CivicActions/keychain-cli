@@ -131,7 +131,7 @@ environment and nothing else changed.
 
 - [ ] T038 [US2] Implement `src/keychain_cli/commands/run.py`: `run_run(args, command_tail, store, exec_fn) -> int`: raise `UsageError` if `command_tail` is empty; `values = store.get_all(ns)` (raises `NotFound` when the namespace has no variables); `env = {**os.environ, **{name: v.data.decode() for ...}}`; `exec_fn(command_tail[0], command_tail, env)` (`os.execvpe` by default); map `FileNotFoundError`/`PermissionError` → `CommandNotFoundError`; never invoke a shell
 - [ ] T039 [US2] Wire `run` subparser in `src/keychain_cli/cli.py` with optional positional `namespace` and pass the pre-split `command_tail`; help text explains `--` and that exit status after launch is the command's own
-- [ ] T040 [US2] Complete `README.md` "First secret in 60 seconds" section using `set` and `run` only, mirroring quickstart scenarios 1 and 3
+- [ ] T040 [US2] Complete `README.md` "First secret in 60 seconds" section using `set` and `run` only, mirroring quickstart scenarios 1 and 3. Do not mention `copy` here or anywhere in the primary guidance (FR-019h)
 
 **Checkpoint**: MVP complete. A developer can delete a `.env` file and keep working. Tag `0.1.0` candidate.
 
@@ -228,10 +228,12 @@ namespace for `run`, `list`, `init`, `check`.
 
 ---
 
-## Phase 9: User Story 7 — Retrieve one value for use elsewhere (Priority: P3)
+## Phase 9: User Story 7 — Retrieve one value for use elsewhere (Priority: P3, optional)
 
-**Goal**: `keychain-cli copy <ns> VAR` puts one value on the clipboard and clears it after
-45 seconds only if still present.
+**Goal**: `keychain-cli copy <ns> VAR [--clear-after N]` puts one value on the clipboard,
+warns about clipboard managers, and clears it after the interval only if still present.
+Spec FR-019a makes this capability a MAY: if CLIP-001 is not approved, skip this phase
+entirely and the release is still complete.
 
 **Independent Test**: spec Story 7 independent test plus quickstart scenario 8.
 
@@ -240,21 +242,22 @@ namespace for `run`, `list`, `init`, `check`.
 
 ### Governance
 
-- [ ] T066 [US7] Add exception **CLIP-001** to `SECURITY-EXCEPTIONS.md`: code path `commands/copy.py` → `clipboard.py` → `/usr/bin/pbcopy` stdin; exposure window 45 s or until overwritten; observers: any process running as the user, clipboard managers, Universal Clipboard; why no alternative: the command's purpose is to hand the value to another application; pinning test `tests/unit/test_clipboard.py::test_value_reaches_only_pbcopy_stdin`; re-evaluation trigger: macOS provides a CLI-accessible transient or app-scoped pasteboard. Obtain and record maintainer approval (name and date) in the row
+- [ ] T066 [US7] Add exception **CLIP-001** to `SECURITY-EXCEPTIONS.md`: code path `commands/copy.py` → `clipboard.py` → `/usr/bin/pbcopy` stdin; exposure window `--clear-after` seconds (default 45, max 300) or until overwritten; observers: any process running as the user, clipboard managers and history tools, Universal Clipboard; why no alternative: the command's purpose is to hand the value to an application that cannot read environment variables; pinning test `tests/unit/test_clipboard.py::test_value_reaches_only_pbcopy_stdin`; re-evaluation trigger: macOS provides a CLI-accessible transient or app-scoped pasteboard. Obtain and record maintainer approval (name and date) in the row
 
 ### Tests for User Story 7
 
-- [ ] T067 [P] [US7] Unit tests `tests/unit/test_clipboard.py` with `RecordingSpawn`: `copy_to_clipboard(value)` spawns exactly `["/usr/bin/pbcopy"]` and writes the bytes to its stdin; the clear helper is spawned as `[sys.executable, "-m", "keychain_cli._clipclear"]` with `start_new_session=True`, stdout/stderr `DEVNULL`, and receives `sha256hex + "\n" + "45\n"` on stdin; **pinning test** `test_value_reaches_only_pbcopy_stdin` asserts the value bytes appear in no spawned `argv` and only in the `pbcopy` stdin record; `pbcopy` non-zero exit → `ClipboardError` exit 9
-- [ ] T068 [P] [US7] Unit tests `tests/unit/test_cmd_copy.py`: success prints `copied <ns>/<VAR> to clipboard; it will be cleared in 45 seconds` on stderr and nothing on stdout; missing variable → exit 3 and no spawn at all; more than one variable positional → exit 2; no wildcard or namespace-only form
-- [ ] T069 [P] [US7] Integration tests `tests/integration/test_clipboard.py` (marker `integration`, additionally skipped when `DISPLAY`-less CI lacks a pasteboard server — detect by running `pbpaste` once): `copy` then `pbpaste` equals the placeholder; run `_clipclear` directly with interval `1` and matching hash → clipboard empty after 2 s; run with interval `1` after `pbcopy` of other text → other text survives; restore the prior clipboard content in teardown
+- [ ] T067 [P] [US7] Unit tests `tests/unit/test_clipboard.py` with `RecordingSpawn`: `copy_to_clipboard(value)` spawns exactly `["/usr/bin/pbcopy"]` and writes the bytes to its stdin; the clear helper is spawned as `[sys.executable, "-m", "keychain_cli._clipclear"]` with `start_new_session=True`, stdout/stderr `DEVNULL`, and receives `sha256hex + "\n" + str(seconds) + "\n"` on stdin; **pinning test** `test_value_reaches_only_pbcopy_stdin` asserts the value bytes appear in no spawned `argv` and only in the `pbcopy` stdin record; `pbcopy` non-zero exit → `ClipboardError` exit 9; helper spawn raising `OSError` → an immediate `pbcopy` with empty stdin is recorded and `ClipboardError` raised with message containing `not left on the clipboard`
+- [ ] T068 [P] [US7] Unit tests `tests/unit/test_cmd_copy.py`: success prints the two-line confirmation (interval named, `warning:` line present) on stderr and nothing on stdout; missing variable → exit 3 and no spawn at all; store error → exit 5 and no spawn; zero or two variable positionals → exit 2; `--clear-after 0`, `-1`, `301`, `abc` → exit 2 with no spawn; `--clear-after 300` accepted; `--clear-after 5` passed through to the helper stdin
+- [ ] T069 [P] [US7] Isolation test `tests/unit/test_clipboard_isolation.py`: statically assert (via `ast` over `src/keychain_cli`) that only `commands/copy.py` imports `clipboard`, and that the string `pbcopy` appears only in `clipboard.py` and `_clipclear.py`; dynamically run every other command through `run_cli` with `RecordingSpawn` and assert no spawn of `pbcopy` (FR-019b, Story 7 scenario 8)
+- [ ] T070 [P] [US7] Integration tests `tests/integration/test_clipboard.py` (marker `integration`, additionally skipped when a pasteboard server is unavailable — detect by running `pbpaste` once): `copy` then `pbpaste` equals the placeholder; run `_clipclear` directly with interval `1` and matching hash → clipboard empty after 2 s; run with interval `1` after `pbcopy` of other text → other text survives; restore the prior clipboard content in teardown
 
 ### Implementation for User Story 7
 
-- [ ] T070 [US7] Implement `src/keychain_cli/_clipclear.py`: `main()` reads two lines from stdin (hex digest, interval seconds); sleeps; runs `/usr/bin/pbpaste` capturing stdout; if `sha256(stdout) == digest` runs `/usr/bin/pbcopy` with empty stdin; exits 0 always; holds only the digest during the wait; no logging
-- [ ] T071 [US7] Implement `src/keychain_cli/clipboard.py`: `CLEAR_AFTER_SECONDS = 45`; `copy_to_clipboard(value: SecretValue, spawn_fn) -> None` per research R-010; `schedule_clear(digest: str, spawn_fn)`; raise `ClipboardError` on any spawn or write failure with next step "copy something else to clear the clipboard"
-- [ ] T072 [US7] Implement `src/keychain_cli/commands/copy.py`: `run_copy(args, store, spawn_fn) -> int`: `store.get(ns, name)` (exit 3 before any spawn), `copy_to_clipboard`, `schedule_clear`, confirmation message per contract
-- [ ] T073 [US7] Wire `copy` subparser in `src/keychain_cli/cli.py` with required positionals `namespace`, `variable`; help text includes the full clipboard caveat from `contracts/cli.md` (readable by other apps, managers, sync; 45 s; residual exposure if killed)
-- [ ] T074 [US7] Extend `docs/threat-model.md` with the clipboard channel and `README.md` Security notes with the same caveat and a link to `SECURITY-EXCEPTIONS.md`
+- [ ] T071 [US7] Implement `src/keychain_cli/_clipclear.py`: `main()` reads two lines from stdin (hex digest, interval seconds); sleeps; runs `/usr/bin/pbpaste` capturing stdout; if `sha256(stdout) == digest` runs `/usr/bin/pbcopy` with empty stdin; exits 0 always; holds only the digest during the wait; no logging
+- [ ] T072 [US7] Implement `src/keychain_cli/clipboard.py`: `DEFAULT_CLEAR_AFTER = 45`, `MIN_CLEAR_AFTER = 1`, `MAX_CLEAR_AFTER = 300`; `copy_to_clipboard(value: SecretValue, spawn_fn) -> None`; `schedule_clear(digest: str, seconds: int, spawn_fn) -> None`; `clear_now(spawn_fn)`; on any failure to spawn or feed the helper, call `clear_now` then raise `ClipboardError` with next step `value was not left on the clipboard; retry or paste from another source` (research R-010)
+- [ ] T073 [US7] Implement `src/keychain_cli/commands/copy.py`: `run_copy(args, store, spawn_fn) -> int`: validate `--clear-after` bounds first (`UsageError`), `store.get(ns, name)` (exit 3 or 5 before any spawn), `copy_to_clipboard`, `schedule_clear`, then print the two-line confirmation from `contracts/cli.md` including the non-suppressible `warning:` line
+- [ ] T074 [US7] Wire `copy` subparser in `src/keychain_cli/cli.py` with required positionals `namespace`, `variable` (exactly one), option `--clear-after` (type int, default 45, help states the 1–300 bound); help text includes the full clipboard caveat from `contracts/cli.md` and the sentence "Not the normal way to use a secret; prefer `run`"
+- [ ] T075 [US7] Documentation placement per FR-019h: add a separate `README.md` section "Occasional: pasting a value into a web console" with the full caveat and a link to `SECURITY-EXCEPTIONS.md`; add a test `tests/unit/test_readme_guidance.py` asserting the string `keychain-cli copy` does not appear in the README sections "First secret in 60 seconds" or "Commands" quick table, nor in `docs/` examples of daily use; extend `docs/threat-model.md` with the clipboard channel
 
 **Checkpoint**: All seven stories complete.
 
@@ -262,14 +265,14 @@ namespace for `run`, `list`, `init`, `check`.
 
 ## Phase 10: Polish & Cross-Cutting Concerns
 
-- [ ] T075 [P] Complete `README.md`: Commands section mirroring `contracts/cli.md` summaries, Exit codes table, minimum macOS 13 / Python 3.11 statement, `uv tool install` from git and from PyPI, uninstall
-- [ ] T076 [P] Help-text audit: for every subcommand assert in `tests/unit/test_help.py` that `--help` output includes one example invocation, the exit codes it can return, and (for `copy`) the clipboard caveat; assert top-level `--help` lists all eight commands with one-line summaries
-- [ ] T077 [P] Exit-code contract test `tests/unit/test_exit_codes.py`: parametrize every enumerated error condition in `contracts/cli.md` and assert the documented code; assert `errors.py` codes match the README table (parse the table)
-- [ ] T078 [P] Performance check `tests/integration/test_perf.py`: `run ns -- /usr/bin/true` wall time under 1 s over 5 runs (SC-007); assert lazy imports by checking `sys.modules` after `run` excludes `keychain_cli.envfile`, `keychain_cli.manifest`, `keychain_cli.clipboard`
-- [ ] T079 [P] Create `.github/workflows/release.yml`: on tag `v*`, `uv build`, verify `CHANGELOG.md` has a section for the tag, attach `dist/*` to a GitHub release
-- [ ] T080 Finalize `docs/threat-model.md` (review every channel listed in the constitution's Additional Constraints; state that an attacker with code execution as the user is out of scope) and `SECURITY.md` disclosure contact
-- [ ] T081 Run `quickstart.md` manually on a clean macOS user account using only `README.md` and `--help`, by someone other than the implementer (constitution usability gate); record findings in `specs/001-keychain-secret-manager/checklists/usability.md`
-- [ ] T082 Update `CHANGELOG.md` `0.1.0` section (features, security notes, known limitations: single-line `.env` values, current-directory manifest only, clipboard exposure) and bump `__version__`
+- [ ] T076 [P] Complete `README.md`: Commands section mirroring `contracts/cli.md` summaries, Exit codes table, minimum macOS 13 / Python 3.11 statement, `uv tool install` from git and from PyPI, uninstall. Keep `copy` out of the primary path per T075
+- [ ] T077 [P] Help-text audit: for every subcommand assert in `tests/unit/test_help.py` that `--help` output includes one example invocation, the exit codes it can return, and (for `copy`) the clipboard caveat and the "prefer `run`" sentence; assert top-level `--help` lists all commands with one-line summaries
+- [ ] T078 [P] Exit-code contract test `tests/unit/test_exit_codes.py`: parametrize every enumerated error condition in `contracts/cli.md` and assert the documented code; assert `errors.py` codes match the README table (parse the table)
+- [ ] T079 [P] Performance check `tests/integration/test_perf.py`: `run ns -- /usr/bin/true` wall time under 1 s over 5 runs (SC-007); assert lazy imports by checking `sys.modules` after `run` excludes `keychain_cli.envfile`, `keychain_cli.manifest`, `keychain_cli.clipboard`
+- [ ] T080 [P] Create `.github/workflows/release.yml`: on tag `v*`, `uv build`, verify `CHANGELOG.md` has a section for the tag, attach `dist/*` to a GitHub release
+- [ ] T081 Finalize `docs/threat-model.md` (review every channel listed in the constitution's Additional Constraints; state that an attacker with code execution as the user is out of scope) and `SECURITY.md` disclosure contact
+- [ ] T082 Run `quickstart.md` manually on a clean macOS user account using only `README.md` and `--help`, by someone other than the implementer (constitution usability gate); record findings in `specs/001-keychain-secret-manager/checklists/usability.md`
+- [ ] T083 Update `CHANGELOG.md` `0.1.0` section (features, security notes, known limitations: single-line `.env` values, current-directory manifest only, clipboard exposure if `copy` shipped) and bump `__version__`
 
 ---
 
@@ -294,7 +297,8 @@ namespace for `run`, `list`, `init`, `check`.
   uses the store directly if US4 is not yet built.
 - **US6 manifest** (Phase 8): depends on **US1** (shared prompting/add helper) and rewires
   `run` and `list` (US2, US4) for inference. Sequence after those three.
-- **US7 copy** (Phase 9): Foundational only, gated on **T066 approval**.
+- **US7 copy** (Phase 9): Foundational only, gated on **T066 approval**. Optional: FR-019a
+  is a MAY, so the release is complete without this phase.
 
 ### Within Each Story
 
@@ -359,8 +363,8 @@ Task: "tests/integration/test_end_to_end.py (set)"     # T032
 
 1. `v0.2.0`: US3 `import`, US4 `list`, US5 `delete` (all P2; independent of each other).
 2. `v0.3.0`: US6 manifest, `init`, `check`, namespace inference.
-3. `v0.4.0`: US7 `copy`, only after CLIP-001 is approved.
-4. Phase 10 polish rolls into whichever release is current; T081 usability check is
+3. `v0.4.0`: US7 `copy`, only if CLIP-001 is approved; otherwise skip and ship without it.
+4. Phase 10 polish rolls into whichever release is current; T082 usability check is
    required before the first release that is announced to the team.
 
 ### Parallel Team Strategy

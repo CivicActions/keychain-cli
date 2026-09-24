@@ -241,7 +241,9 @@ and it leaves the clipboard shortly afterwards.
 
 **Why this priority**: Without a supported path for this, the developer's fallback is to copy
 the value back into a plaintext file — reintroducing exactly the risk the tool removes. It is
-P3 because it is occasional rather than daily, and everything else works without it.
+P3 because it is occasional rather than daily, and everything else works without it. This
+story is optional: the tool is complete without it, and it is never the default way to reach
+a value.
 
 **Independent Test**: Store a variable, request it, paste from the clipboard and confirm the
 value is correct, confirm nothing was printed to the terminal, then wait past the documented
@@ -251,7 +253,8 @@ interval and confirm the clipboard no longer holds it.
 
 1. **Given** namespace `client-a` holds `API_TOKEN`, **When** the developer requests that one
    variable, **Then** its value is placed on the clipboard and the terminal shows only a
-   confirmation naming the variable.
+   confirmation naming the variable, the clearing interval, and a warning that clipboard
+   history tools may retain the value.
 2. **Given** a value has been copied, **When** the documented interval elapses, **Then** the
    value is removed from the clipboard automatically.
 3. **Given** a value has been copied and the developer then copies something else, **When** the
@@ -260,6 +263,13 @@ interval and confirm the clipboard no longer holds it.
    **Then** it fails clearly and the clipboard is not modified.
 5. **Given** the developer asks for an entire namespace rather than one named variable, **When**
    the command runs, **Then** it is refused — there is no bulk reveal.
+6. **Given** the automatic clearing helper cannot be started, **When** the command runs,
+   **Then** the clipboard is cleared immediately, the command exits non-zero, and the
+   developer is told the value was not left on the clipboard.
+7. **Given** the developer supplies a clearing interval outside the documented bounds,
+   **When** the command runs, **Then** it is rejected before anything is copied.
+8. **Given** any command other than the copy command runs, **When** it completes or fails,
+   **Then** the clipboard is untouched.
 
 ---
 
@@ -410,22 +420,37 @@ interval and confirm the clipboard no longer holds it.
   or values. When no namespace exists the listing MUST be empty and MUST exit successfully;
   an empty store is a valid state, not an error.
 
-**Revealing a single value**
+**Revealing a single value (optional capability)**
 
-- **FR-019a**: System MUST provide a way to copy one named variable's value to the system
-  clipboard, so a developer can paste it into an external destination without keeping a
-  plaintext copy on disk.
-- **FR-019b**: System MUST NOT print the value to the terminal, write it to a file, or place
-  it in any process's command-line arguments while doing so. Confirmation output MUST state
-  only that the named variable was copied.
-- **FR-019c**: System MUST clear the copied value from the clipboard automatically after a
-  short, documented interval, and MUST only clear it if the clipboard still holds that value,
-  so that a developer's later copy is never destroyed.
-- **FR-019d**: System MUST require the developer to name the variable explicitly. There MUST
-  be no bulk reveal, no wildcard, and no reveal of an entire namespace.
-- **FR-019e**: System MUST state clearly, in its help text and documentation, that the
-  clipboard is readable by other applications running as the same user, and for how long the
-  value remains there.
+- **FR-019a**: The tool MAY provide an explicit command to copy a single secret value to the
+  macOS clipboard for workflows that cannot consume environment variables. Clipboard use MUST
+  never be the default secret-access mechanism. The tool MUST avoid printing the secret and
+  SHOULD clear the clipboard after a configurable short timeout when it can do so without
+  overwriting newer clipboard contents. If the command is provided, FR-019b through FR-019h
+  apply to it.
+- **FR-019b**: The clipboard MUST be written only by that explicit command. No other command,
+  option, or failure path MAY place a value on the clipboard.
+- **FR-019c**: The command MUST copy exactly one named variable per invocation. There MUST be
+  no bulk copy, no wildcard, and no form that copies an entire namespace.
+- **FR-019d**: The command MUST NOT print the value to the terminal, write it to a file, or
+  place it in any process's command-line arguments. Confirmation output MUST state only that
+  the named variable was copied and when it will be cleared.
+- **FR-019e**: The command MUST clear the copied value from the clipboard automatically after
+  a short timeout, MUST clear only if the clipboard still holds that value so a developer's
+  later copy is never destroyed, and MUST accept a bounded override of the timeout with a
+  documented secure default. If automatic clearing cannot be scheduled, the command MUST clear
+  the clipboard immediately and fail with a non-zero status rather than leave the value in
+  place with no clearing.
+- **FR-019f**: The command MUST warn, in its confirmation output, that reliable clearing
+  cannot be guaranteed: clipboard history tools, clipboard managers, and clipboard sync
+  services may retain the value after it is cleared.
+- **FR-019g**: Help text and documentation MUST state that the clipboard is readable by other
+  applications running as the same user, how long the value remains there, and that
+  clipboard managers can defeat automatic clearing.
+- **FR-019h**: Documentation MUST present clipboard copy as an occasional path for
+  destinations that cannot read environment variables. It MUST NOT appear in the primary
+  `.env`-replacement guidance, the install-to-first-secret walkthrough, or any example of
+  daily use.
 
 **Running commands**
 
@@ -584,13 +609,14 @@ interval and confirm the clipboard no longer holds it.
   supplies a default namespace when none is typed, and the selection is always reported.
   Destructive commands never infer. Whether the tool searches parent directories for a manifest
   is deferred to planning and must be documented either way.
-- **The clipboard is a bounded, deliberate exposure.** Copying a value to the clipboard places
-  it somewhere other applications running as the same user can read, and clipboard managers or
-  sync services may capture it. This is accepted as the least-bad option for a use case whose
-  realistic alternative is a plaintext file, and it is mitigated by explicit single-variable
-  invocation and automatic clearing. It must be documented plainly in help text rather than
-  glossed over. Planning should determine whether this warrants an entry in the constitution's
-  security exception register.
+- **The clipboard is a bounded, deliberate, optional exposure.** Copying a value to the
+  clipboard places it somewhere other applications running as the same user can read, and
+  clipboard managers or sync services may capture it and defeat automatic clearing. This is
+  accepted as the least-bad option for a use case whose realistic alternative is a plaintext
+  file, and it is mitigated by an explicit single-variable command, automatic clearing with a
+  short bounded timeout, a per-use warning, and exclusion from the primary guidance. The
+  capability is optional (FR-019a MAY); a release that omits it is complete. Planning records
+  it in the constitution's security exception register.
 
 ## Out of Scope
 

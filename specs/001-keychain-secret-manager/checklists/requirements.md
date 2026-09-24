@@ -61,6 +61,18 @@ constitution; no functional requirement depends on it.
   makes it an exposure channel in the sense of Principle II even though it is deliberate,
   bounded, and explicitly invoked.
 
+**Amendment 2026-09-24 (clipboard guardrails).** FR-019a–e rewritten as FR-019a–h at the
+maintainer's direction. The capability is now a MAY (optional); the clipboard is written only
+by the explicit `copy` command; one variable per invocation; the value is never printed; the
+timeout is configurable within a documented bound and the clear never overwrites newer
+content; if clearing cannot be scheduled the clipboard is cleared immediately and the command
+fails; every confirmation warns that clipboard managers can defeat clearing; and `copy` is
+excluded from primary `.env`-replacement guidance. Story 7 gained acceptance scenarios 6–8.
+Propagated to research R-010, plan (Constitution Check rows I and II, design note 6,
+Complexity Tracking), contracts/cli.md, quickstart scenario 8, and tasks Phase 9 (T066–T075,
+now including an isolation test and a documentation-placement test). Checklist result
+unchanged at 16/16.
+
 **Testability note.** SC-002, SC-003, SC-006, SC-009, and SC-010 are written as assertions an
 automated test can make directly, supporting the constitution's requirement that
 security-sensitive behavior be tested. FR-036 through FR-040 are phrased as negative

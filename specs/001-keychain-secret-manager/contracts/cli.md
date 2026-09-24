@@ -139,21 +139,35 @@ keychain-cli check [<namespace>] [--json]
 Exit: 0 nothing missing; 1 one or more missing (names printed); 3 manifest missing; 7
 manifest malformed.
 
-### `copy` — copy one value to the clipboard
+### `copy` — copy one value to the clipboard (optional capability)
 
 ```
-keychain-cli copy <namespace> <VAR>
+keychain-cli copy <namespace> <VAR> [--clear-after SECONDS]
 ```
 
-- Places the value on the system clipboard via `pbcopy` stdin and prints `copied
-  <namespace>/<VAR> to clipboard; it will be cleared in 45 seconds` on stderr.
-- After 45 seconds the clipboard is cleared **only if it still holds this value**.
-- Refuses any form that names more than one variable. There is no bulk copy.
-- Help text states: the clipboard is readable by every application running as you, and by
-  clipboard managers and Universal Clipboard sync, for up to 45 seconds; if the tool is
-  killed before then, the value remains until you copy something else.
+- Exists only for destinations that cannot read environment variables. It is never the
+  default way to reach a value, and no other command touches the clipboard.
+- `--clear-after`: integer seconds, default 45, allowed 1–300. Out-of-range values are
+  rejected (exit 2) before anything is copied.
+- Places the value on the system clipboard via `pbcopy` stdin. Prints on stderr:
 
-Exit: 0 copied; 3 not found (clipboard untouched); 5 Keychain error; 9 clipboard failure.
+  ```
+  copied <namespace>/<VAR> to clipboard; it will be cleared in 45 seconds.
+  warning: clipboard managers, history tools, and clipboard sync may keep a copy.
+  ```
+
+- After the interval the clipboard is cleared **only if it still holds this value**.
+- If the clearing helper cannot be started, the clipboard is cleared immediately and the
+  command exits 9 with `value was not left on the clipboard`.
+- Refuses any form that names more than one variable or none. There is no bulk copy.
+- Help text states: the clipboard is readable by every application running as you and by
+  clipboard managers and sync services, which can defeat automatic clearing; the value
+  remains for up to the interval; if the tool is killed before then, the value remains until
+  you copy something else.
+
+Exit: 0 copied and clear scheduled; 2 interval out of range; 3 not found (clipboard
+untouched); 5 Keychain error (clipboard untouched); 9 clipboard write failed, or clear
+could not be scheduled (clipboard cleared).
 
 ## Exit codes
 
@@ -168,7 +182,7 @@ Exit: 0 copied; 3 not found (clipboard untouched); 5 Keychain error; 9 clipboard
 | 6 | Unsupported platform or Python version | yes |
 | 7 | Invalid input: bad name, malformed manifest, empty or ambiguous stdin value, unreadable file | yes |
 | 8 | `run`: command not found or not executable | yes |
-| 9 | `copy`: clipboard operation failed | yes |
+| 9 | `copy`: clipboard write failed, or clearing could not be scheduled (clipboard cleared) | yes |
 
 `run` after a successful launch exits with the command's own status, which may coincide
 with any value above.

@@ -57,8 +57,8 @@ Eight commands, roughly 1,500 lines of source plus tests.
 
 | Principle | Status | Evidence in this plan |
 |---|---|---|
-| I. Security and simplicity over breadth | PASS | Zero runtime deps; `exec` instead of process supervision; fixed 45 s clipboard interval, no flag; manifest current-directory only; one new flag beyond the spec (`list --all`, see Complexity Tracking). |
-| II. Secrets never surface (NON-NEGOTIABLE) | PASS with one registered exception | Keychain via `ctypes` keeps values in memory (R-001). `pbcopy` and the clear helper receive data on stdin (R-010). `SecretValue` redacts `repr` and never rides on exceptions (data-model). Exception **CLIP-001** for the clipboard channel must be approved and registered before Story 7 is implemented. |
+| I. Security and simplicity over breadth | PASS | Zero runtime deps; `exec` instead of process supervision; manifest current-directory only; two additions beyond the spec's minimum (`list --all`, bounded `copy --clear-after`), both justified in Complexity Tracking. |
+| II. Secrets never surface (NON-NEGOTIABLE) | PASS with one registered exception | Keychain via `ctypes` keeps values in memory (R-001). `pbcopy` and the clear helper receive data on stdin (R-010). `SecretValue` redacts `repr` and never rides on exceptions (data-model). Exception **CLIP-001** for the optional clipboard command must be approved and registered before Story 7 is implemented; declining it omits the command (FR-019a is a MAY). |
 | III. Keychain is the system of record | PASS | No cache, index, or mirror; namespace listing is a live attribute query (R-002). Non-macOS exits 6 before any storage code loads. `security` CLI not used at all. |
 | IV. Least privilege | PASS | `run` delivers only to the exec'd process; parent shell untouched. Attribute-only queries for every listing so no secret data is read unless needed. `exec` drops all secret memory. No files created. |
 | V. Standard library first | PASS | Runtime is stdlib only. Four dev-only tools each justified in R-012. `uv.lock` committed; `pip-audit` in CI. |
@@ -175,8 +175,11 @@ the only code permitted to import `ctypes` bindings for Security or CoreFoundati
    confirms once for the whole conflicting set (R-007).
 5. **Stdin mode**: engaged by `--stdin` or non-TTY stdin; one variable only, checked before
    reading; strip one trailing newline; empty is exit 7 (R-006).
-6. **Clipboard**: gated on CLIP-001 approval; helper receives hash and interval over stdin;
-   fixed 45 s (R-010).
+6. **Clipboard** (optional): gated on CLIP-001 approval; only `commands/copy.py` may import
+   `clipboard.py`; helper receives hash and interval over stdin; default 45 s, `--clear-after`
+   bounded 1–300 and validated before copying; helper spawn failure clears immediately and
+   exits 9; confirmation always carries the clipboard-manager warning; excluded from primary
+   README guidance (R-010).
 7. **Test isolation**: integration tests always pass a temporary keychain handle; a test
    asserts the backend refuses to run integration fixtures without one.
 8. **Exceptions**: store errors carry `OSStatus` and OS message only. A unit test walks the
@@ -188,6 +191,7 @@ the only code permitted to import `ctypes` bindings for Security or CoreFoundati
 |---|---|---|
 | `list --all` flag | When a manifest is present in the current directory, bare `list` infers that namespace (FR-020a); the developer still needs a way to list namespaces from inside a project. | Making bare `list` always list namespaces would break inference consistency with `run`/`init`/`check`, violating Principle IX's "a flag means the same thing everywhere". Requiring `cd` elsewhere is friction, which Principle IX treats as a security risk. |
 | Optional `keychain` handle on the backend | Integration tests must never touch the developer's login keychain, and CI runners need a keychain they own. | Running integration tests against the login keychain risks real data and prompts, and fails headless in CI. |
+| `copy --clear-after SECONDS` (default 45, bounded 1–300) | Spec FR-019a/e require a configurable short timeout; some destinations need more than 45 s to reach the paste field. | A fixed interval contradicts the spec. An unbounded or zero value would be a way to disable clearing, which Principle I forbids; the bound and the non-disableable default keep the option from being a way to be insecure. |
 
 No constitution violations to justify.
 

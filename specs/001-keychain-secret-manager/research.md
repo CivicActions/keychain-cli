@@ -204,29 +204,52 @@ can be added later without breaking anything; removing it later would be breakin
 
 ---
 
-## R-010: Clipboard copy and auto-clear (Story 7)
+## R-010: Clipboard copy and auto-clear (Story 7, optional capability)
 
 **Decision**: Write the value to `/usr/bin/pbcopy` via its **stdin**. Spawn a detached
 helper (`python -m keychain_cli._clipclear`, `start_new_session=True`, stdio to
 `/dev/null` except a stdin pipe) and pass it, over that pipe, the SHA-256 of the value and
-the interval. The helper sleeps 45 seconds, reads the clipboard via `pbpaste` stdout, and
-clears it with `pbcopy` **only if** the hash matches. The parent exits immediately.
+the interval. The helper sleeps for the interval, reads the clipboard via `pbpaste` stdout,
+and clears it with `pbcopy` **only if** the hash matches. The parent exits immediately.
+
+**Timeout**: default 45 seconds, overridable with `--clear-after SECONDS`, bounded to
+1–300. The bound is validated before anything is copied. This is the one configurable
+option in the tool; the spec (FR-019a, FR-019e) requires it, and the bound plus the secure
+default satisfy Principle I's test that an option must not be a way to be insecure: the
+worst case is five minutes, and there is no way to disable clearing.
+
+**Fail closed**: if the helper cannot be spawned or fed, the command immediately runs
+`pbcopy` with empty input to clear the clipboard and exits 9. The value is never left on
+the clipboard without a scheduled clear (FR-019e).
+
+**Warning**: the confirmation line always carries the caveat that clipboard managers,
+history tools, and sync services may retain the value after clearing (FR-019f). It is not
+suppressible.
+
+**Isolation**: `clipboard.py` is imported only by `commands/copy.py`; a unit test asserts
+no other module imports it and that no other command's code path spawns `pbcopy`
+(FR-019b).
 
 **Rationale**: no secret in any `argv`; the helper holds only a hash during the wait, so it
 cannot leak the value if it is dumped; the hash comparison implements "clear only if still
-ours" (FR-019c) without a compiled AppKit binding. 45 seconds is fixed, not configurable,
-per Principle I.
+ours" without a compiled AppKit binding.
 
 **Constitution exception**: the clipboard is an exposure channel readable by every app
 running as the user, and by clipboard managers and Universal Clipboard sync. Because the
 copy command's *purpose* is that exposure, this plan records it as exception **CLIP-001** in
 the security exception register, with a pinning test asserting the value reaches only
 `pbcopy` stdin, and re-evaluation trigger "macOS offers a CLI-accessible transient
-pasteboard API". **Maintainer approval is required before Story 7 is implemented.**
+pasteboard API". **Maintainer approval is required before Story 7 is implemented.** Because
+FR-019a is a MAY, declining the exception simply omits the command; nothing else changes.
+
+**Documentation placement** (FR-019h): `copy` is excluded from the README walkthrough and
+the quickstart's primary path. It lives in a separate "Occasional: pasting a value into a
+web console" section with the full caveat.
 
 **Alternatives considered**: `NSPasteboard.changeCount` via `ctypes`/`objc_msgSend` (avoids
 reading the clipboard back, but the Objective-C runtime bridge is the least readable code
-in the project for a P3 story); a `--seconds` flag (option growth; rejected).
+in the project for a P3 story); a fixed, non-configurable interval (rejected by the spec's
+FR-019e); unbounded or zero timeout (a way to disable clearing; rejected).
 
 ---
 

@@ -139,15 +139,23 @@ keychain-cli run -- /usr/bin/env >/dev/null
 #   stderr: using namespace qs-demo from .keychain-cli.toml
 ```
 
-### 8. Clipboard (Story 7, after CLIP-001 is approved)
+### 8. Clipboard (Story 7, optional; only after CLIP-001 is approved)
+
+Not part of the normal workflow. Use it only for a destination that cannot read environment
+variables, such as a vendor web console.
 
 ```sh
 keychain-cli copy qs-demo API_TOKEN
-#   copied qs-demo/API_TOKEN to clipboard; it will be cleared in 45 seconds
+#   copied qs-demo/API_TOKEN to clipboard; it will be cleared in 45 seconds.
+#   warning: clipboard managers, history tools, and clipboard sync may keep a copy.
 pbpaste | wc -c              # non-zero
 sleep 50; pbpaste | wc -c    # 0
-keychain-cli copy qs-demo API_TOKEN; echo other | pbcopy; sleep 50; pbpaste
+keychain-cli copy qs-demo API_TOKEN --clear-after 5; echo other | pbcopy; sleep 7; pbpaste
 #   other                    (newer clipboard content survives)
+keychain-cli copy qs-demo API_TOKEN --clear-after 0; echo "exit=$?"
+#   exit=2, nothing copied
+keychain-cli copy qs-demo; echo "exit=$?"
+#   exit=2, no namespace-wide copy
 ```
 
 ### 9. Delete (Story 5)
