@@ -73,6 +73,19 @@ Complexity Tracking), contracts/cli.md, quickstart scenario 8, and tasks Phase 9
 now including an isolation test and a documentation-placement test). Checklist result
 unchanged at 16/16.
 
+**Amendment 2026-09-25 (analyze findings).** `/speckit.analyze` reported 0 critical, 2 high,
+5 medium, 7 low findings; all applied. High: `check` now exits 10 (not 1) when variables are
+missing, so a crash is distinguishable (FR-041); an automated file-leak sweep
+(`assert_sandbox_clean`) was added to every end-to-end test (FR-036, SC-009). Medium: FR-038
+length-leak test added (T025); interrupt handling with exit 130 and partial report added to
+spec edge cases, contract, T033, T046, T062; `KEYCHAIN_CLI_TEST_KEYCHAIN` documented in the
+contract and plan Complexity Tracking, and the `KEYCHAIN_CLI_DEBUG` switch was dropped; three
+timing-sensitive tests reworked to poll with bounded budgets (T037, T070, T079). Low: stale
+FR-019b reference fixed, FR-019d reworded, FR-004/FR-039 cross-referenced, terminology note
+added to Key Entities, FR-019 covers the manifest-present case, plan test tree updated, and
+FR-003/FR-026 manual-verification notes added to T026/T037. Checklist result unchanged at
+16/16.
+
 **Testability note.** SC-002, SC-003, SC-006, SC-009, and SC-010 are written as assertions an
 automated test can make directly, supporting the constitution's requirement that
 security-sensitive behavior be tested. FR-036 through FR-040 are phrased as negative

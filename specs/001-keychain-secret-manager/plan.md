@@ -140,16 +140,22 @@ tests/
 ├── unit/
 │   ├── test_names.py
 │   ├── test_secret_redaction.py
+│   ├── test_prompt.py
 │   ├── test_envfile.py
 │   ├── test_manifest.py
 │   ├── test_cli_parsing.py    # '--' split, usage errors, exit codes
-│   ├── test_cmd_set.py … test_cmd_copy.py
-│   └── test_no_leaks.py       # every command, success + failure, placeholder absent
+│   ├── test_cmd_set.py, test_cmd_run.py, test_cmd_import.py, test_cmd_list.py,
+│   │   test_cmd_delete.py, test_cmd_init_check.py, test_cmd_copy.py
+│   ├── test_namespace_inference.py
+│   ├── test_clipboard.py, test_clipboard_isolation.py
+│   ├── test_no_leaks.py       # every command, success + failure, placeholder absent
+│   ├── test_help.py, test_exit_codes.py, test_readme_guidance.py
 └── integration/               # marker: integration; macOS only
-    ├── conftest.py            # temp keychain via SecKeychainCreate / SecKeychainDelete
+    ├── conftest.py            # temp keychain via SecKeychainCreate / SecKeychainDelete; sandboxed HOME/TMPDIR/cwd
     ├── test_store.py          # backend CRUD, duplicate, not-found, unicode round-trip
-    ├── test_end_to_end.py     # subprocess-driven commands, env delivery, exit codes
-    └── test_clipboard.py      # pbcopy/pbpaste, clear-only-if-ours
+    ├── test_end_to_end.py     # subprocess-driven commands, env delivery, exit codes, file-leak sweep
+    ├── test_clipboard.py      # pbcopy/pbpaste, clear-only-if-ours
+    └── test_perf.py           # SC-007 latency, lazy imports
 
 .github/workflows/
 ├── ci.yml                     # macos-latest × {3.11, 3.14}: ruff, mypy, pytest (unit+integration), uv lock --check, pip-audit, gitleaks
@@ -183,7 +189,13 @@ the only code permitted to import `ctypes` bindings for Security or CoreFoundati
 7. **Test isolation**: integration tests always pass a temporary keychain handle; a test
    asserts the backend refuses to run integration fixtures without one.
 8. **Exceptions**: store errors carry `OSStatus` and OS message only. A unit test walks the
-   exception hierarchy and asserts no constructor accepts a `SecretValue`.
+   exception hierarchy and asserts no constructor accepts a `SecretValue`. No message ever
+   includes a value's length or any quantity derived from it (FR-038).
+9. **Interrupts**: `set`, `import`, and `init` catch `KeyboardInterrupt`, print the partial
+   `StoreReport`, and exit 130, so an interrupted multi-variable run always says what landed.
+10. **File-leak sweep**: end-to-end tests run every command with `HOME`, `TMPDIR`, and the
+    working directory pointed at fresh temporary directories, then assert no file was created
+    and the placeholder appears in no file beneath them (FR-036, SC-009).
 
 ## Complexity Tracking
 
@@ -192,6 +204,11 @@ the only code permitted to import `ctypes` bindings for Security or CoreFoundati
 | `list --all` flag | When a manifest is present in the current directory, bare `list` infers that namespace (FR-020a); the developer still needs a way to list namespaces from inside a project. | Making bare `list` always list namespaces would break inference consistency with `run`/`init`/`check`, violating Principle IX's "a flag means the same thing everywhere". Requiring `cd` elsewhere is friction, which Principle IX treats as a security risk. |
 | Optional `keychain` handle on the backend | Integration tests must never touch the developer's login keychain, and CI runners need a keychain they own. | Running integration tests against the login keychain risks real data and prompts, and fails headless in CI. |
 | `copy --clear-after SECONDS` (default 45, bounded 1–300) | Spec FR-019a/e require a configurable short timeout; some destinations need more than 45 s to reach the paste field. | A fixed interval contradicts the spec. An unbounded or zero value would be a way to disable clearing, which Principle I forbids; the bound and the non-disableable default keep the option from being a way to be insecure. |
+| `KEYCHAIN_CLI_TEST_KEYCHAIN` environment variable | End-to-end integration tests drive the installed executable through `subprocess`, where the constructor seam is unreachable, and must still target the temporary keychain rather than the login keychain. | Skipping subprocess-level tests would leave argv splitting, exit codes, and stream separation untested end to end. The variable redirects to another Keychain file, never to a less protected store, and prints a stderr notice on every invocation so it cannot be active silently. Documented in contracts/cli.md. |
+
+Rejected option: a `KEYCHAIN_CLI_DEBUG` traceback switch. Unexpected errors print the
+exception class name only; maintainers reproduce with the test suite. One less option, and
+no path by which a traceback could surface a value.
 
 No constitution violations to justify.
 

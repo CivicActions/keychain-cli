@@ -42,9 +42,12 @@ keychain-cli set <namespace> <VAR> [<VAR> ...] [--force] [--stdin]
 - `--stdin`, or stdin not a TTY: reads the single value from stdin. Exactly one `<VAR>` is
   allowed, checked before reading. One trailing newline is stripped. Empty input: exit 7.
 - Summary on stderr: `stored: A, B` / `skipped: C` / `overwritten: D`.
+- Interrupted with Ctrl-C between prompts: the summary is printed for what was stored so
+  far, and the exit code is 130.
 
 Exit: 0 all requested variables stored or overwritten; 4 at least one skipped or refused;
-7 invalid name, empty stdin value, or multiple variables in stdin mode; 5 Keychain error.
+7 invalid name, empty stdin value, or multiple variables in stdin mode; 5 Keychain error;
+130 interrupted.
 
 ### `list` — list namespaces or a namespace's variables
 
@@ -97,7 +100,8 @@ keychain-cli import <namespace> <file> [--force]
 - Summary on stderr with counts and names: stored, overwritten, skipped, malformed.
 
 Exit: 0 every parsed entry stored or overwritten; 4 entries skipped; 3 file not found; 7
-file unreadable, not a regular file, or every line malformed; 5 Keychain error.
+file unreadable, not a regular file, or every line malformed; 5 Keychain error; 130
+interrupted (summary printed for entries stored so far).
 
 ### `delete` — remove one variable or a whole namespace
 
@@ -126,7 +130,7 @@ keychain-cli init [<namespace>]
 - Non-interactive with missing variables: exit 7, listing the missing names.
 
 Exit: 0 complete; 3 manifest missing; 7 manifest malformed, or missing variables and no
-TTY; 5 Keychain error.
+TTY; 5 Keychain error; 130 interrupted (summary printed for values stored so far).
 
 ### `check` — report which manifest variables are missing
 
@@ -136,7 +140,7 @@ keychain-cli check [<namespace>] [--json]
 
 - Prints missing variable names one per line (or a JSON array). Stores nothing.
 
-Exit: 0 nothing missing; 1 one or more missing (names printed); 3 manifest missing; 7
+Exit: 0 nothing missing; 10 one or more missing (names printed); 3 manifest missing; 7
 manifest malformed.
 
 ### `copy` — copy one value to the clipboard (optional capability)
@@ -174,8 +178,8 @@ could not be scheduled (clipboard cleared).
 | Code | Meaning | Nothing changed? |
 |---|---|---|
 | 0 | Success (for `check`: nothing missing) | — |
-| 1 | Unexpected internal error (for `check`: variables missing) | yes |
-| 2 | Usage error: bad arguments, missing `--` | yes |
+| 1 | Unexpected internal error | yes |
+| 2 | Usage error: bad arguments, missing `--`, out-of-range option | yes |
 | 3 | Not found: namespace, variable, file, or manifest | yes |
 | 4 | Refused: overwrite or deletion declined, or non-interactive without `--force` | yes |
 | 5 | Keychain error: locked, denied, canceled, unavailable, or unexpected status | yes |
@@ -183,9 +187,22 @@ could not be scheduled (clipboard cleared).
 | 7 | Invalid input: bad name, malformed manifest, empty or ambiguous stdin value, unreadable file | yes |
 | 8 | `run`: command not found or not executable | yes |
 | 9 | `copy`: clipboard write failed, or clearing could not be scheduled (clipboard cleared) | yes |
+| 10 | `check`: one or more required variables are missing (a normal result, not an error) | yes |
+| 130 | Interrupted by the user during `set`, `import`, or `init`; the summary lists what was stored before the interrupt | partially |
 
 `run` after a successful launch exits with the command's own status, which may coincide
 with any value above.
+
+Unexpected internal errors (code 1) print a one-line message naming the exception class and
+never a traceback. There is no debug switch; maintainers reproduce with the test suite.
+
+## Environment variables
+
+| Variable | Read by | Effect |
+|---|---|---|
+| `KEYCHAIN_CLI_TEST_KEYCHAIN` | store factory | Path to a keychain file to use instead of the login keychain. Intended only for the integration test suite. When set, the tool prints `using test keychain <path>` on stderr on every invocation so it can never be active silently. |
+
+No other environment variable changes the tool's behavior.
 
 ## Error message form
 

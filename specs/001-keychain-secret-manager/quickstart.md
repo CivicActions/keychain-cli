@@ -129,8 +129,8 @@ cat > .keychain-cli.toml <<'EOF'
 namespace = "qs-demo"
 variables = ["API_TOKEN", "DB_PASSWORD", "NEW_ONE"]
 EOF
-keychain-cli check
-#   NEW_ONE                  exit=1
+keychain-cli check; echo "exit=$?"
+#   NEW_ONE                  exit=10
 keychain-cli init
 #   prompted only for NEW_ONE
 keychain-cli check; echo "exit=$?"

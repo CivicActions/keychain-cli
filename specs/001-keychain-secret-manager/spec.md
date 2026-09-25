@@ -293,7 +293,8 @@ interval and confirm the clipboard no longer holds it.
 - The tool is run on a platform other than macOS: it must exit immediately with a clear error
   rather than degrade to any less protected storage.
 - A partially completed multi-variable store or import is interrupted: the tool must report
-  precisely which variables were stored and which were not.
+  precisely which variables were stored and which were not, and exit with a distinct,
+  documented status for interruption.
 
 **Naming and input**
 
@@ -370,6 +371,7 @@ interval and confirm the clipboard no longer holds it.
 - **FR-003**: System MUST NOT echo secret input to the terminal during entry, and MUST NOT
   reveal the length of the value being typed.
 - **FR-004**: System MUST NOT accept a secret value as a command-line argument in any command.
+  This governs the argument parser; FR-039 governs documentation of the same rule.
 - **FR-004a**: System MUST accept a value from standard input, as the only non-prompt entry
   path, when standard input is not a terminal or when the developer explicitly requests it.
   This path MUST be limited to exactly one variable per invocation and MUST be refused, before
@@ -417,8 +419,9 @@ interval and confirm the clipboard no longer holds it.
   namespace listing, containing names only.
 - **FR-019**: System MUST provide a way to list the namespaces that exist, showing each name
   in its originally given casing, in the stable ordering of FR-017, without any variable names
-  or values. When no namespace exists the listing MUST be empty and MUST exit successfully;
-  an empty store is a valid state, not an error.
+  or values. This MUST remain reachable when a manifest in the current directory would
+  otherwise select a namespace. When no namespace exists the listing MUST be empty and MUST
+  exit successfully; an empty store is a valid state, not an error.
 
 **Revealing a single value (optional capability)**
 
@@ -433,8 +436,8 @@ interval and confirm the clipboard no longer holds it.
 - **FR-019c**: The command MUST copy exactly one named variable per invocation. There MUST be
   no bulk copy, no wildcard, and no form that copies an entire namespace.
 - **FR-019d**: The command MUST NOT print the value to the terminal, write it to a file, or
-  place it in any process's command-line arguments. Confirmation output MUST state only that
-  the named variable was copied and when it will be cleared.
+  place it in any process's command-line arguments. Confirmation output MUST contain nothing
+  beyond the variable name, when the value will be cleared, and the FR-019f warning.
 - **FR-019e**: The command MUST clear the copied value from the clipboard automatically after
   a short timeout, MUST clear only if the clipboard still holds that value so a developer's
   later copy is never destroyed, and MUST accept a bounded override of the timeout with a
@@ -508,7 +511,7 @@ interval and confirm the clipboard no longer holds it.
 - **FR-038**: System MUST NOT reveal information that narrows a secret's value, including its
   length, prefix, suffix, or character composition.
 - **FR-039**: System MUST NOT require the developer to type a secret value on a command line
-  in any documented workflow.
+  in any documented workflow (the documentation counterpart of FR-004).
 - **FR-040**: System MUST fail closed — aborting with a non-zero status — whenever it cannot
   verify that a security precondition holds.
 
@@ -540,6 +543,10 @@ interval and confirm the clipboard no longer holds it.
   *fulfillment* of them. Also supplies the default namespace when one is not named explicitly.
 - **Keychain Entry**: The stored representation of a variable's value in the macOS Keychain.
   Sole system of record for secret values; the tool keeps no other copy.
+
+*Terminology note*: this specification says "the store command" for what the CLI contract
+names `set`, and "Keychain Entry" for what the data model names `KeychainItem`. They are the
+same things.
 
 ## Success Criteria *(mandatory)*
 
@@ -636,4 +643,4 @@ Explicitly excluded from this release, to be revisited only by a later specifica
   the store command, using the variable names the consuming tool expects.
 - Acting as a credential helper or credential process for other tools, for example the AWS
   `credential_process` setting or git credential helpers. These require emitting a secret
-  value on standard output, which FR-019b forbids.
+  value on standard output, which FR-019d forbids.
