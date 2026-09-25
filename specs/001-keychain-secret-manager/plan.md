@@ -218,8 +218,9 @@ Re-evaluated after writing data-model, contracts, and quickstart. Unchanged: PAS
 nine principles. Two items require action before the corresponding tasks start, and are
 recorded here so `/speckit-tasks` can sequence them:
 
-- **CLIP-001** approval by a maintainer and entry in `SECURITY-EXCEPTIONS.md` before any
-  `copy` command code is written (constitution II exception process).
+- **CLIP-001** approved by the maintainer on 2026-09-25 and recorded in
+  `SECURITY-EXCEPTIONS.md`. The entry is not active until its pinning test exists (T067);
+  T066 re-verifies it against the implementation before Phase 9 starts.
 - **Threat model** (`docs/threat-model.md`) drafted alongside the `keychain/` package,
   since that is the first storage interaction and Additional Constraints require it.
 

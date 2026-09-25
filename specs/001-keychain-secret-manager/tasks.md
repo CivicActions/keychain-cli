@@ -35,7 +35,7 @@ every task; "per contract" means that file.
 - [ ] T002 Create package skeleton `src/keychain_cli/__init__.py` (with `__version__ = "0.1.0"`), `src/keychain_cli/__main__.py` (calls `cli.main()`), `src/keychain_cli/commands/__init__.py`, `src/keychain_cli/keychain/__init__.py`, `tests/__init__.py`, `tests/unit/__init__.py`, `tests/integration/__init__.py`
 - [ ] T003 Run `uv sync` and commit `uv.lock`; verify `uv run keychain-cli --version` fails only because `cli.py` does not exist yet
 - [ ] T004 [P] Create `.github/workflows/ci.yml`: matrix `macos-latest` × Python `3.11`, `3.14`; steps `uv sync`, `uv lock --check`, `uv run ruff format --check .`, `uv run ruff check .`, `uv run mypy`, `uv run pytest -m "not integration"`, `uv run pytest -m integration`, `uvx pip-audit`, and a secret-scan step (gitleaks action)
-- [ ] T005 [P] Create `SECURITY-EXCEPTIONS.md` with the register table (columns: ID, code path, exposure window, observer, why no alternative, approving maintainer, pinning test, re-evaluation trigger) and no rows; add `SECURITY.md` with disclosure contact placeholder and supported-versions statement; add `CHANGELOG.md` with an `Unreleased` section
+- [ ] T005 [P] `SECURITY-EXCEPTIONS.md` already exists at the repo root with CLIP-001 approved (2026-09-25); leave it unchanged. Add `SECURITY.md` with disclosure contact placeholder and supported-versions statement; add `CHANGELOG.md` with an `Unreleased` section
 - [ ] T006 [P] Create `README.md` stub with sections: What it is, Install (`uv tool install`), First secret in 60 seconds, Commands, Exit codes, Troubleshooting (interpreter-path authorization prompt from research R-001), Security notes. Fill Install and Troubleshooting now; leave other sections as headings to complete in Phase 10
 - [ ] T007 [P] Create `.gitignore` for Python/uv (`.venv/`, `dist/`, `__pycache__/`, `*.egg-info/`, `.mypy_cache/`, `.ruff_cache/`, `.pytest_cache/`) and a `.gitleaks.toml` allowlisting the placeholder token pattern `LEAKCHECK-` used by tests
 
@@ -237,12 +237,14 @@ entirely and the release is still complete.
 
 **Independent Test**: spec Story 7 independent test plus quickstart scenario 8.
 
-**⚠️ GATE**: T066 must be complete and approved before any other task in this phase starts
-(constitution Principle II exception process).
+**⚠️ GATE**: CLIP-001 was approved by the maintainer on 2026-09-25 and recorded in
+`SECURITY-EXCEPTIONS.md`, so this phase may proceed. T066 confirms the entry still matches
+the implementation before any other task in this phase starts (constitution Principle II
+exception process).
 
 ### Governance
 
-- [ ] T066 [US7] Add exception **CLIP-001** to `SECURITY-EXCEPTIONS.md`: code path `commands/copy.py` → `clipboard.py` → `/usr/bin/pbcopy` stdin; exposure window `--clear-after` seconds (default 45, max 300) or until overwritten; observers: any process running as the user, clipboard managers and history tools, Universal Clipboard; why no alternative: the command's purpose is to hand the value to an application that cannot read environment variables; pinning test `tests/unit/test_clipboard.py::test_value_reaches_only_pbcopy_stdin`; re-evaluation trigger: macOS provides a CLI-accessible transient or app-scoped pasteboard. Obtain and record maintainer approval (name and date) in the row
+- [ ] T066 [US7] Verify the **CLIP-001** entry in `SECURITY-EXCEPTIONS.md` against the current design: code path `commands/copy.py` → `clipboard.py` → `/usr/bin/pbcopy` stdin; exposure window `--clear-after` seconds (default 45, max 300); pinning test `tests/unit/test_clipboard.py::test_value_reaches_only_pbcopy_stdin`. If anything drifted, update the entry and obtain fresh maintainer sign-off (name and date) before continuing. When T067 lands, change the Status line from "Not yet active" to "Active"
 
 ### Tests for User Story 7
 
@@ -297,8 +299,8 @@ entirely and the release is still complete.
   uses the store directly if US4 is not yet built.
 - **US6 manifest** (Phase 8): depends on **US1** (shared prompting/add helper) and rewires
   `run` and `list` (US2, US4) for inference. Sequence after those three.
-- **US7 copy** (Phase 9): Foundational only, gated on **T066 approval**. Optional: FR-019a
-  is a MAY, so the release is complete without this phase.
+- **US7 copy** (Phase 9): Foundational only. CLIP-001 approved 2026-09-25; T066 re-verifies
+  the entry. Still optional under FR-019a: the release is complete without this phase.
 
 ### Within Each Story
 
@@ -363,7 +365,7 @@ Task: "tests/integration/test_end_to_end.py (set)"     # T032
 
 1. `v0.2.0`: US3 `import`, US4 `list`, US5 `delete` (all P2; independent of each other).
 2. `v0.3.0`: US6 manifest, `init`, `check`, namespace inference.
-3. `v0.4.0`: US7 `copy`, only if CLIP-001 is approved; otherwise skip and ship without it.
+3. `v0.4.0`: US7 `copy` (CLIP-001 approved; the team may still choose to omit it).
 4. Phase 10 polish rolls into whichever release is current; T082 usability check is
    required before the first release that is announced to the team.
 
