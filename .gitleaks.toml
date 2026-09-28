@@ -1,0 +1,7 @@
+title = "Gitleaks configuration for keychain-cli"
+
+[allowlist]
+description = "Allow test placeholder tokens"
+regexes = [
+    '''LEAKCHECK-''',
+]

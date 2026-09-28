@@ -1,0 +1,35 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/huntridge-labs/argus/1.12.6/argus-config.schema.json
+# Argus Security Scanner Configuration
+# Docs: https://huntridge-labs.github.io/argus/
+
+version: "1.0"
+
+scanners:
+  # Secret detection (SAST)
+  gitleaks:
+    enabled: true
+
+  # Python static security analysis (SAST)
+  bandit:
+    enabled: true
+    path: "."
+
+  # Pattern-based static analysis (SAST)
+  opengrep:
+    enabled: true
+    path: "."
+
+  # Dependency vulnerability scanning (SAST / SCA)
+  osv:
+    enabled: true
+
+reporting:
+  formats:
+    - terminal
+    - sarif
+  severity_threshold: high
+  output_dir: "./argus-results"
+
+execution:
+  backend: auto
+  pull_policy: if-not-present

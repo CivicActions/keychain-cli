@@ -1,0 +1,58 @@
+name: Argus SAST Security Scan
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  security-events: write
+  pull-requests: write
+
+jobs:
+  sast:
+    name: Argus SAST Scanners
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Argus and Bandit
+        run: |
+          pip install "argus-security==1.12.6" "bandit[toml,sarif]"
+
+      - name: Run Gitleaks secret detection
+        uses: huntridge-labs/argus/.github/actions/scanner-gitleaks@1.12.6
+        continue-on-error: true
+        with:
+          enable_code_security: true
+          fail_on_severity: high
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run Bandit Python SAST scanner
+        uses: huntridge-labs/argus/.github/actions/scanner-bandit@1.12.6
+        continue-on-error: true
+        with:
+          enable_code_security: true
+          fail_on_severity: high
+
+      - name: Run OpenGrep SAST scanner
+        uses: huntridge-labs/argus/.github/actions/scanner-opengrep@1.12.6
+        continue-on-error: true
+        with:
+          enable_code_security: true
+          fail_on_severity: high
+
+      - name: Run Argus CLI Scan (Unified Report)
+        run: |
+          argus scan --config argus.yml --severity-threshold high

@@ -1,0 +1,35 @@
+default_install_hook_types: [pre-commit, pre-push]
+default_stages: [pre-commit]
+
+repos:
+  - repo: local
+    hooks:
+      # Code Formatter: Ruff format (fast, Black-compatible)
+      - id: ruff-format
+        name: Ruff Formatter
+        entry: bash -c 'if command -v ruff >/dev/null 2>&1; then ruff format --force-exclude "$@"; else env -u UV_ENV_FILE uvx ruff format --force-exclude "$@"; fi' --
+        language: system
+        types_or: [python, pyi]
+
+      # Python Linter: Ruff check (fast linter with auto-fix)
+      - id: ruff-check
+        name: Ruff Linter
+        entry: bash -c 'if command -v ruff >/dev/null 2>&1; then ruff check --fix --force-exclude "$@"; else env -u UV_ENV_FILE uvx ruff check --fix --force-exclude "$@"; fi' --
+        language: system
+        types_or: [python, pyi]
+
+      # Python Linter: Pylint
+      - id: pylint
+        name: Pylint Linter
+        entry: bash -c 'if command -v pylint >/dev/null 2>&1; then pylint "$@"; else env -u UV_ENV_FILE uvx pylint "$@"; fi' --
+        language: system
+        types: [python]
+
+      # SAST Scanner: Argus (runs on push)
+      - id: argus-sast
+        name: Argus SAST Scanners
+        entry: bash -c 'if command -v argus >/dev/null 2>&1; then argus scan --allow-local-versions; else env -u UV_ENV_FILE uvx --from argus-security argus scan --allow-local-versions; fi'
+        language: system
+        stages: [pre-push]
+        pass_filenames: false
+        always_run: true
