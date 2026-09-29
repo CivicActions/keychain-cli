@@ -18,12 +18,14 @@ repos:
         language: system
         types_or: [python, pyi]
 
-      # Python Linter: Pylint
+      # Python Linter: Pylint. Runs the project's pinned pylint inside the uv environment so
+      # test imports (pytest) resolve, and scores src+tests once, matching CI.
       - id: pylint
         name: Pylint Linter
-        entry: bash -c 'if command -v pylint >/dev/null 2>&1; then pylint "$@"; else env -u UV_ENV_FILE uvx pylint "$@"; fi' --
+        entry: env -u UV_ENV_FILE uv run pylint src tests
         language: system
         types: [python]
+        pass_filenames: false
 
       # SAST Scanner: Argus (runs on push)
       - id: argus-sast

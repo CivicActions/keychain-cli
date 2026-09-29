@@ -22,6 +22,7 @@ dev = [
 ]
 
 [tool.pytest.ini_options]
+testpaths = ["tests"]
 markers = [
     "integration: marks tests as integration tests against macOS Keychain",
 ]
@@ -58,3 +59,4 @@ disable = [
 [tool.mypy]
 strict = true
 python_version = "3.11"
+files = ["src", "tests"]
