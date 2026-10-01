@@ -44,16 +44,17 @@ def test_run_without_separator_is_a_usage_error(run_cli: RunCli, argv: list[str]
 
 
 def test_run_with_separator_reaches_the_run_command(run_cli: RunCli) -> None:
-    # Not implemented in this build, so the dispatcher's own exit 1 proves the parse worked.
+    # Now implemented; reaches run command which looks up client-a (exit 3)
     code, _out, err = run_cli(["run", "client-a", "--", "npm", "run", "dev"])
-    assert code == 1
-    assert "not implemented" in err
+    assert code == 3
+    assert "client-a" in err
 
 
 def test_run_with_omitted_namespace_does_not_treat_command_as_namespace(run_cli: RunCli) -> None:
+    # With omitted namespace and no manifest, exits 2 (UsageError)
     code, _out, err = run_cli(["run", "--", "npm", "run", "dev"])
-    assert code == 1
-    assert "not implemented" in err
+    assert code == 2
+    assert "no namespace given" in err
     assert "npm" not in err
 
 
@@ -81,12 +82,10 @@ def test_help_lists_every_command(run_cli: RunCli) -> None:
         assert command in out
 
 
-@pytest.mark.parametrize("command", [c for c in cli.COMMANDS if c != "run"])
-def test_every_command_is_recognized_and_not_implemented(run_cli: RunCli, command: str) -> None:
-    code, out, err = run_cli([command])
-    assert code == 1
-    assert out == ""
-    assert f"the {command} command is not implemented" in err
+# All commands are now implemented in the CLI dispatcher
+@pytest.mark.skip(reason="All commands are now implemented")
+def test_every_command_is_recognized_and_not_implemented(run_cli: RunCli) -> None:
+    pass
 
 
 def test_non_darwin_exits_6_before_any_keychain_import(

@@ -11,8 +11,12 @@ import sys
 from collections.abc import Callable, Iterator, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
+
+if TYPE_CHECKING:
+    from keychain_cli.keychain.store import SecurityFrameworkStore
 
 if sys.platform != "darwin":
     collect_ignore_glob = ["test_*.py"]
@@ -40,7 +44,7 @@ def temp_keychain_path(tmp_path: Path, temp_keychain: int) -> Path:
 
 
 @pytest.fixture
-def real_store(temp_keychain: int) -> object:
+def real_store(temp_keychain: int) -> SecurityFrameworkStore:
     from keychain_cli.keychain.store import SecurityFrameworkStore
 
     return SecurityFrameworkStore(keychain=temp_keychain)

@@ -38,6 +38,9 @@ exclude = [
 select = ["E", "F", "W", "I", "B", "C4", "UP", "ARG", "SIM"]
 ignore = []
 
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["ARG001", "ARG002", "SIM102"]
+
 [tool.pylint.main]
 fail-under = 8.0
 ignore-paths = [

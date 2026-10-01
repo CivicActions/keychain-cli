@@ -13,13 +13,12 @@ must be closed or renewed.
 
 | ID | Channel | Status | Approved by | Pinning test |
 |---|---|---|---|---|
-| CLIP-001 | System clipboard via `pbcopy` | Approved 2026-09-25; becomes active when the pinning test lands (tasks T067, T072) | Fen Labalme | `tests/unit/test_clipboard.py::test_value_reaches_only_pbcopy_stdin` |
+| CLIP-001 | System clipboard via `pbcopy` | Active (approved 2026-09-25) | Fen Labalme | `tests/unit/test_clipboard.py::test_value_reaches_only_pbcopy_stdin` |
 
 ## CLIP-001: clipboard copy of a single secret
 
-**Status**: Approved 2026-09-25. Not yet active: the code path and pinning test do not exist
-until Phase 9 of `specs/001-keychain-secret-manager/tasks.md` is implemented. Approval
-authorizes that phase to proceed.
+**Status**: Active. Approved 2026-09-25. Implemented with pinning test
+`tests/unit/test_clipboard.py::test_value_reaches_only_pbcopy_stdin` in Phase 9.
 
 **Code path**: `keychain_cli/commands/copy.py` → `keychain_cli/clipboard.py` →
 `/usr/bin/pbcopy`, with the value written to `pbcopy`'s **stdin**. The detached clearing

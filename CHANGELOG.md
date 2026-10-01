@@ -6,27 +6,35 @@ breaking and lands in a major release.
 
 ## Unreleased
 
+## [0.1.0] - 2026-10-01
+
 ### Added
 
-- Storage layer: `SecretStore` protocol and its Security framework implementation. Items
-  are generic passwords stamped with creator code `kccl` under service
-  `keychain-cli:<namespace>`; listing is attribute-only and never reads secret data.
+- Complete CLI implementation for all commands:
+  - `set`: Interactive secret entry with hidden prompts, standard input mode, and overwrite confirmation.
+  - `run`: Process execution (`execvpe`) with injected environment variables and `--` command separation.
+  - `import`: `.env` file parser with malformed line warnings, duplicate detection, and batch overwrite confirmation.
+  - `list`: Namespace and variable listing, with `--all` and `--json` support.
+  - `delete`: Variable removal and confirmation-gated namespace deletion.
+  - `init`: Interactive onboarding driven by `.keychain-cli.toml` manifest.
+  - `check`: Manifest compliance and drift verification with `--json` support.
+  - `copy`: Single-secret clipboard copy with automatic expiring clear and warning (governed by CLIP-001).
+- Namespace inference: `run`, `list`, `init`, and `check` infer target namespace from `.keychain-cli.toml` in the current directory.
+- Storage layer: `SecretStore` protocol and its Security framework implementation via `ctypes`. Items
+  are generic passwords stamped with creator code `kccl` under service `keychain-cli:<namespace>`.
 - Core types: `SecretValue` (redacted `repr`, unformattable), namespace and variable name
   validation (namespaces case-insensitive, variables case-sensitive), error hierarchy with
   the documented exit-code table, platform guard (macOS 13+, Python 3.11+).
-- CLI dispatcher with the `--` separator split, `--help`, and `--version`. Every command is
-  registered and returns "not implemented" with exit 1 in this build.
-- Test suite: unit tests against an in-memory store; integration tests against a temporary
-  keychain that never touches the login keychain.
+- Test suite: unit tests against an in-memory store; leak checks; integration tests against temporary keychains.
 
 ### Security
 
-- No secret value can appear in `argv`, an exception, a log, or a temporary file: the
-  Security framework is called directly through `ctypes`, and the `security` command-line
-  tool is not used.
-- Exception CLIP-001 (clipboard copy) approved 2026-09-25; see `SECURITY-EXCEPTIONS.md`.
-  The command itself is not yet implemented.
+- No secret value can appear in `argv`, an exception, a log, or a temporary file. The Keychain is
+  driven directly through the Security framework, not through the `security` command.
+- Active exception CLIP-001 (clipboard copy) in `SECURITY-EXCEPTIONS.md`.
 
 ### Known limitations
 
-- `set`, `run`, `import`, `list`, `delete`, `init`, `check`, and `copy` are not implemented.
+- Single-line values only in `.env` parser.
+- Manifest lookup is strictly current working directory (parent directories are not searched).
+- Clipboard exposure during clear interval if clipboard history tools retain copies.

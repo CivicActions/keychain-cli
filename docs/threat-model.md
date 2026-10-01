@@ -1,8 +1,7 @@
 # Threat Model
 
-**Status**: draft, written alongside the storage layer. Sections marked *extend* grow as
-the corresponding input path lands (constitution, "Threat model": revisit whenever a new
-input path, subprocess invocation, or storage interaction is added).
+**Status**: finalized for version 0.1.0. Revisit whenever a new input path, subprocess
+invocation, or storage interaction is added (project constitution, "Threat model").
 
 ## Assets
 
@@ -31,7 +30,7 @@ input path, subprocess invocation, or storage interaction is added).
 - The tool never accepts a secret as an argument and never places one in the arguments of
   any process it starts. The Keychain is driven through the Security framework via
   `ctypes`, so no `security add-generic-password -w` ever runs.
-- Secrets reach a child process only through its environment (`run`, not yet implemented),
+- Secrets reach a child process only through its environment (`run`),
   and only the process the developer named. The parent shell is untouched.
 - Tests assert placeholder values are absent from every recorded `argv`.
 
@@ -63,8 +62,21 @@ input path, subprocess invocation, or storage interaction is added).
 - **Keychain responses**: every status code that is not success, duplicate, or not-found
   becomes a `StoreError` carrying the OS status and OS text only. Result objects are
   type-checked before conversion.
-- **`.env` files**: *extend when `import` lands.*
-- **Manifest files**: *extend when `init` and `check` land.*
+- **`.env` files**: parsed with strict rules in `envfile.py`:
+  - Hostile or malformed line content: lines that fail syntax or variable name validation
+    produce warnings with the line number and optional key name only. The line content itself
+    is never printed or stored on an exception.
+  - Binary / malformed files: strict UTF-8 decoding rejects non-UTF-8 content naming the line
+    number without displaying unparsed bytes.
+  - Non-regular files: directories, pipes, and sockets are rejected before reading (exit 7).
+  - Immutability: the source file is never modified or rewritten.
+- **Manifest files**: parsed using Python's standard `tomllib` (`.keychain-cli.toml`):
+  - Read-only: the tool never writes or modifies `.keychain-cli.toml`.
+  - Schema restrictions: only top-level `namespace` and `variables` keys are allowed. Tables,
+    nested sections, and unexpected keys are rejected with exit 7 before any storage interaction.
+  - Strict names: namespace and variable names must satisfy the same validation rules as CLI arguments.
+  - Local directory boundary: manifests are read from the current working directory only; parent
+    directories are never searched.
 
 ## Interpreter trust
 
@@ -76,8 +88,20 @@ This is expected and is documented in the README so it is not misdiagnosed as a 
 ## Deliberate exposures
 
 Every deliberate departure from "secrets never surface" is recorded in
-`SECURITY-EXCEPTIONS.md`. Currently: CLIP-001 (clipboard copy), approved but not yet
-implemented. *Extend when `copy` lands.*
+`SECURITY-EXCEPTIONS.md`.
+
+- **CLIP-001: Clipboard copy (`copy` command)**:
+  - Exposure window: secret remains on the system pasteboard for `--clear-after` seconds
+    (default 45, max 300) or until the developer copies something else.
+  - Threat actors: any process running under the user's account with pasteboard access,
+    plus third-party clipboard managers and cloud synchronization tools (e.g. Universal Clipboard).
+  - Mitigations:
+    - Never a default workflow; requires explicit `copy` command.
+    - Single secret only; bulk copy is refused.
+    - Automatic clearing helper checks SHA-256 hash so newer user content is never overwritten.
+    - If the clearing helper fails to launch, the clipboard is immediately cleared and the command exits 9.
+    - Unsuppressible warning printed on stderr upon every invocation.
+    - Pinned by `test_value_reaches_only_pbcopy_stdin` asserting secret bytes reach only `pbcopy` stdin.
 
 ## Out of scope
 

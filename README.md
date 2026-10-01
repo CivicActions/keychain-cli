@@ -3,9 +3,6 @@
 Store project secrets in the macOS Keychain and hand them to one command's environment,
 instead of keeping a plaintext `.env` file.
 
-**Status**: pre-release. The storage layer is complete and tested; the commands are not
-yet implemented. See [CHANGELOG.md](CHANGELOG.md).
-
 ## What it is
 
 A small Python command-line tool for macOS. Each project gets a *namespace* in your login
@@ -17,6 +14,15 @@ Requires macOS 13 or later and Python 3.11 or later. There is no fallback storag
 platforms; the tool exits with code 6.
 
 ## Install
+
+From PyPI:
+
+```sh
+uv tool install keychain-cli
+keychain-cli --version
+```
+
+Or from the git repository:
 
 ```sh
 uv tool install git+https://github.com/civicactions/keychain-cli
@@ -31,12 +37,83 @@ uv tool uninstall keychain-cli
 
 ## First secret in 60 seconds
 
-*To be completed when the `set` and `run` commands land.*
+1. Store secrets in a project namespace:
+
+   ```sh
+   keychain-cli set my-project API_TOKEN DB_PASSWORD
+   ```
+
+   You are prompted for each value without terminal echo:
+
+   ```text
+   Value for my-project/API_TOKEN:
+   Value for my-project/DB_PASSWORD:
+   stored: API_TOKEN, DB_PASSWORD
+   ```
+
+2. Run your command with secrets injected:
+
+   ```sh
+   keychain-cli run my-project -- npm run dev
+   ```
+
+   The command starts with `API_TOKEN` and `DB_PASSWORD` available in its environment.
+   When the process finishes, no secrets remain in your shell session.
+
+## Team setup with a manifest
+
+Projects can commit a `.keychain-cli.toml` manifest in the project root directory to declare
+the namespace and required environment variable names (names only, never values):
+
+```toml
+# .keychain-cli.toml
+namespace = "my-project"
+variables = [
+  "API_TOKEN",
+  "DB_PASSWORD",
+]
+```
+
+### Onboarding and drift detection
+
+1. Check for missing variables without storing anything:
+
+   ```sh
+   keychain-cli check
+   ```
+
+   Exits `0` if all variables are present, or `10` if any are missing (listing the missing names).
+
+2. Initialize missing secrets:
+
+   ```sh
+   keychain-cli init
+   ```
+
+   Prompts only for declared variables not yet in your Keychain. Existing values are never touched.
+
+3. Run without typing the namespace:
+
+   ```sh
+   keychain-cli run -- npm run dev
+   ```
+
+   The tool infers `my-project` from `.keychain-cli.toml` in the current directory.
 
 ## Commands
 
-*To be completed as commands land. The command contract is in
-`specs/001-keychain-secret-manager/contracts/cli.md`.*
+| Command | Summary |
+|---|---|
+| `set <namespace> <VAR>...` | Store one or more secrets via hidden prompt or standard input |
+| `list [<namespace>]` | List namespaces, or variable names in a namespace |
+| `run [<namespace>] -- <cmd>` | Run a command with secrets injected into its environment |
+| `import <namespace> <file>` | Import an existing `.env` file into a namespace |
+| `delete <namespace> [<VAR>]` | Remove a single variable or an entire namespace |
+| `init [<namespace>]` | Prompt for missing secrets declared in `.keychain-cli.toml` |
+| `check [<namespace>]` | Report which declared secrets are missing |
+
+For full command documentation, options, and exit codes, run `keychain-cli <command> --help`
+or see `specs/001-keychain-secret-manager/contracts/cli.md`.
 
 ## Exit codes
 
@@ -54,6 +131,23 @@ uv tool uninstall keychain-cli
 | 9 | `copy`: clipboard write failed, or clearing could not be scheduled |
 | 10 | `check`: one or more required variables are missing |
 | 130 | Interrupted during `set`, `import`, or `init` |
+
+## Occasional: pasting a value into a web console
+
+For destinations that cannot read environment variables (such as a vendor web console),
+a single secret can be copied to the system clipboard:
+
+```sh
+keychain-cli copy my-project API_TOKEN
+```
+
+**Security notice**:
+- This is an occasional fallback, not the normal way to use secrets; prefer `keychain-cli run`.
+- The clipboard is readable by every application running as your user. Clipboard managers,
+  history tools, and clipboard sync services (such as Universal Clipboard) can defeat automatic clearing.
+- The secret is automatically cleared after 45 seconds (configurable with `--clear-after SECONDS`, 1–300)
+  only if the clipboard still contains the value.
+- Governed by exception entry CLIP-001 in [SECURITY-EXCEPTIONS.md](SECURITY-EXCEPTIONS.md).
 
 ## Troubleshooting
 

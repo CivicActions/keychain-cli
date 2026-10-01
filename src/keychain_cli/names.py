@@ -21,6 +21,7 @@ VARIABLE_FORM = (
 
 _NAMESPACE_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$")
 _VARIABLE_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+VARIABLE_PATTERN = _VARIABLE_RE
 
 
 @dataclass(frozen=True)
