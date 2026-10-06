@@ -32,7 +32,7 @@ jobs:
     steps:
       # A PAT, not GITHUB_TOKEN: pushes made with GITHUB_TOKEN do not trigger other
       # workflows, so ci.yml would never run against the release PR.
-      - uses: googleapis/release-please-action@v4
+      - uses: googleapis/release-please-action@v5
         id: release
         with:
           token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
@@ -60,11 +60,12 @@ jobs:
     env:
       TAG: ${{ inputs.tag || needs.release-please.outputs.tag_name }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           ref: ${{ inputs.tag || needs.release-please.outputs.tag_name }}
 
-      - uses: astral-sh/setup-uv@v7
+      # setup-uv dropped its moving major tags in v8, so this pins an exact version.
+      - uses: astral-sh/setup-uv@v10.2.0
         with:
           python-version: "3.11"
           enable-cache: true
