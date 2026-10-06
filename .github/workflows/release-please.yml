@@ -3,12 +3,23 @@ name: Release
 on:
   push:
     branches: [main]
+  # Manual entry point for publishing an existing tag. Two cases it covers:
+  # bootstrapping the first PyPI release from a tag Release Please did not create,
+  # and retrying a publish that failed after the tag and GitHub Release already
+  # existed (Release Please will not re-run for an already-released version).
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing tag to build and publish, e.g. v0.1.0"
+        required: true
+        type: string
 
 permissions:
   contents: read
 
 jobs:
   release-please:
+    if: github.event_name == 'push'
     name: Release PR / GitHub Release
     runs-on: ubuntu-latest
     permissions:
@@ -31,7 +42,12 @@ jobs:
   publish:
     name: Build and publish to PyPI
     needs: release-please
-    if: needs.release-please.outputs.release_created == 'true'
+    # always() is required: on workflow_dispatch the release-please job is skipped,
+    # and a skipped dependency would otherwise skip this job too.
+    if: >-
+      always() &&
+      (needs.release-please.outputs.release_created == 'true' ||
+       github.event_name == 'workflow_dispatch')
     # Pure-Python wheel with no compiled extensions, so the artifact is identical to one
     # built on macOS. Tests still run on macos-latest in ci.yml.
     runs-on: ubuntu-latest
@@ -41,10 +57,12 @@ jobs:
     permissions:
       id-token: write # PyPI Trusted Publishing (OIDC)
       contents: write # attach artifacts to the GitHub Release
+    env:
+      TAG: ${{ inputs.tag || needs.release-please.outputs.tag_name }}
     steps:
       - uses: actions/checkout@v5
         with:
-          ref: ${{ needs.release-please.outputs.tag_name }}
+          ref: ${{ inputs.tag || needs.release-please.outputs.tag_name }}
 
       - uses: astral-sh/setup-uv@v7
         with:
@@ -61,7 +79,6 @@ jobs:
         uses: pypa/gh-action-pypi-publish@v1.14.2
 
       - name: Attach distribution to GitHub Release
-        run: gh release upload "$TAG" dist/*
+        run: gh release upload "$TAG" dist/* --clobber
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG: ${{ needs.release-please.outputs.tag_name }}

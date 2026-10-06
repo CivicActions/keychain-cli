@@ -166,3 +166,15 @@ Branch names follow `<type>/<short-description>`, e.g. `feat/json-output`, `fix/
 
 If no commit since the last release bumps the version, no release pull request appears. That is
 correct behaviour, not a failure.
+
+### Publishing a tag by hand
+
+The `Release` workflow also has a `workflow_dispatch` trigger taking an existing tag. It builds
+that tag and runs the same publish path, skipping Release Please entirely. Two uses:
+
+- **Bootstrapping.** The `v0.1.0` tag was created by hand, not by Release Please, so nothing
+  automatically published it to PyPI. Dispatching the workflow against `v0.1.0` does that.
+- **Retrying.** If a publish fails after the tag and GitHub Release already exist, Release Please
+  will not re-run for a version it considers released. Dispatch against the tag instead.
+
+It cannot be used to publish something that is not already tagged, and it never invents a version.
