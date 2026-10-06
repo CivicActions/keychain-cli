@@ -19,6 +19,15 @@ def test_toplevel_help_lists_all_commands(run_cli: RunCli) -> None:
         assert cmd in stdout
 
 
+def test_toplevel_help_usage_format(run_cli: RunCli) -> None:
+    code, stdout, stderr = run_cli(["--help"])
+    assert code == 0
+    assert stderr == ""
+    assert (
+        "usage: keychain-cli [-h] [--version] COMMAND ...\n      keychain-cli COMMAND -h\n"
+    ) in stdout
+
+
 @pytest.mark.parametrize("cmd", COMMANDS)
 def test_subcommand_help_includes_examples_and_exit_codes(run_cli: RunCli, cmd: str) -> None:
     code, stdout, stderr = run_cli([cmd, "--help"])
