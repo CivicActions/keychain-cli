@@ -1,0 +1,67 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  release-please:
+    name: Release PR / GitHub Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+    steps:
+      # A PAT, not GITHUB_TOKEN: pushes made with GITHUB_TOKEN do not trigger other
+      # workflows, so ci.yml would never run against the release PR.
+      - uses: googleapis/release-please-action@v4
+        id: release
+        with:
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+
+  publish:
+    name: Build and publish to PyPI
+    needs: release-please
+    if: needs.release-please.outputs.release_created == 'true'
+    # Pure-Python wheel with no compiled extensions, so the artifact is identical to one
+    # built on macOS. Tests still run on macos-latest in ci.yml.
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/keychain-cli
+    permissions:
+      id-token: write # PyPI Trusted Publishing (OIDC)
+      contents: write # attach artifacts to the GitHub Release
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.release-please.outputs.tag_name }}
+
+      - uses: astral-sh/setup-uv@v7
+        with:
+          python-version: "3.11"
+          enable-cache: true
+
+      - name: Build distribution
+        run: uv build
+
+      - name: Check distribution metadata
+        run: uvx twine check --strict dist/*
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@v1.14.2
+
+      - name: Attach distribution to GitHub Release
+        run: gh release upload "$TAG" dist/*
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ needs.release-please.outputs.tag_name }}
