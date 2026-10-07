@@ -152,5 +152,5 @@ Before committing anything security-relevant:
 4. Does the subject describe the change, not the file touched?
 5. If it touches a command name, flag, exit code, or output format — is it marked breaking?
 6. If this becomes the pull request title, does it still stand alone?
-7. Did you leave `pyproject.toml` version, `__version__`, `.release-please-manifest.json`, and
-   `CHANGELOG.md` untouched?
+7. Did you leave `pyproject.toml` version, `__version__`, the `keychain-cli` version in `uv.lock`,
+   `.release-please-manifest.json`, and `CHANGELOG.md` untouched?
