@@ -110,6 +110,7 @@ def default_store_factory() -> SecretStore:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="keychain-cli",
+        usage="%(prog)s [-h] [--version] COMMAND ...\n       %(prog)s COMMAND -h",
         description=(
             "Store project secrets in the macOS Keychain and hand them to one command's "
             "environment, instead of keeping a plaintext .env file."
