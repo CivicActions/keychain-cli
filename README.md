@@ -147,7 +147,7 @@ keychain-cli copy my-project API_TOKEN
   history tools, and clipboard sync services (such as Universal Clipboard) can defeat automatic clearing.
 - The secret is automatically cleared after 45 seconds (configurable with `--clear-after SECONDS`, 1–300)
   only if the clipboard still contains the value.
-- Governed by exception entry CLIP-001 in [SECURITY-EXCEPTIONS.md](SECURITY-EXCEPTIONS.md).
+- Governed by exception entry CLIP-001 in [SECURITY-EXCEPTIONS.md](https://github.com/CivicActions/keychain-cli/blob/main/SECURITY-EXCEPTIONS.md).
 
 ## Troubleshooting
 
@@ -170,6 +170,12 @@ with `uv tool install`, which brings its own supported interpreter.
   messages, temporary files, or exception text. The Keychain is driven directly through the
   Security framework, not through the `security` command.
 - Each developer's Keychain holds their own values. The tool never syncs or shares them.
-- The threat model is in [docs/threat-model.md](docs/threat-model.md). Deliberate
-  exceptions to the rules above are listed in [SECURITY-EXCEPTIONS.md](SECURITY-EXCEPTIONS.md).
-  Report vulnerabilities as described in [SECURITY.md](SECURITY.md).
+- The threat model is in [docs/threat-model.md](https://github.com/CivicActions/keychain-cli/blob/main/docs/threat-model.md). Deliberate
+  exceptions to the rules above are listed in [SECURITY-EXCEPTIONS.md](https://github.com/CivicActions/keychain-cli/blob/main/SECURITY-EXCEPTIONS.md).
+  Report vulnerabilities as described in [SECURITY.md](https://github.com/CivicActions/keychain-cli/blob/main/SECURITY.md).
+
+## Contributing
+
+Commit messages and pull request titles follow [Conventional Commits](https://www.conventionalcommits.org/);
+releases, version numbers, and the changelog are automated with Release Please. See
+[CONTRIBUTING.md](https://github.com/CivicActions/keychain-cli/blob/main/CONTRIBUTING.md) before opening a pull request.
