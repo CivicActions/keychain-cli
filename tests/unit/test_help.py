@@ -23,9 +23,10 @@ def test_toplevel_help_usage_format(run_cli: RunCli) -> None:
     code, stdout, stderr = run_cli(["--help"])
     assert code == 0
     assert stderr == ""
-    assert (
-        "usage: keychain-cli [-h] [--version] COMMAND ...\n      keychain-cli COMMAND -h\n"
-    ) in stdout
+    assert stdout.splitlines()[:2] == [
+        "usage: keychain-cli [-h] [--version] COMMAND ...",
+        "       keychain-cli COMMAND -h",
+    ]
 
 
 @pytest.mark.parametrize("cmd", COMMANDS)
