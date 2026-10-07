@@ -162,19 +162,25 @@ Branch names follow `<type>/<short-description>`, e.g. `feat/json-output`, `fix/
    request titled `chore(main): release X.Y.Z`. That pull request contains the version bumps and the
    generated changelog section — review it, don't edit it.
 3. Merging the release pull request tags `vX.Y.Z`, publishes a GitHub Release, builds the sdist and
-   wheel, and publishes to [PyPI](https://pypi.org/p/keychain-cli) via Trusted Publishing.
+   wheel, and attaches them to that Release.
+
+> **PyPI publishing is currently on hold** while the PyPI account is set up. The upload step in
+> `.github/workflows/release-please.yml` is commented out and marked `PYPI ON HOLD`; everything
+> else in the release flow works. Until it is re-enabled, install from the git repository rather
+> than PyPI.
 
 If no commit since the last release bumps the version, no release pull request appears. That is
 correct behaviour, not a failure.
 
-### Publishing a tag by hand
+### Building a tag by hand
 
 The `Release` workflow also has a `workflow_dispatch` trigger taking an existing tag. It builds
-that tag and runs the same publish path, skipping Release Please entirely. Two uses:
+that tag and runs the same path, skipping Release Please entirely. Two uses:
 
 - **Bootstrapping.** The `v0.1.0` tag was created by hand, not by Release Please, so nothing
-  automatically published it to PyPI. Dispatching the workflow against `v0.1.0` does that.
-- **Retrying.** If a publish fails after the tag and GitHub Release already exist, Release Please
+  automatically built and attached its artifacts. Dispatching the workflow against `v0.1.0` does
+  that.
+- **Retrying.** If the build fails after the tag and GitHub Release already exist, Release Please
   will not re-run for a version it considers released. Dispatch against the tag instead.
 
-It cannot be used to publish something that is not already tagged, and it never invents a version.
+It cannot be used to build something that is not already tagged, and it never invents a version.

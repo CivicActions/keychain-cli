@@ -22,7 +22,7 @@ The short version lives in `.github/copilot-instructions.md`; the authoritative 
 ## Why it matters here
 
 Release Please parses the commit history on `main` to decide the next version, generate
-`CHANGELOG.md`, tag the release, and publish to PyPI. A commit message is not documentation of
+`CHANGELOG.md`, tag the release, and cut the GitHub Release. A commit message is not documentation of
 work that happened — it is **the input to an automated release**. Mislabel a user-visible fix as
 `chore` and it ships to nobody, because `chore` produces no version bump and no changelog entry.
 

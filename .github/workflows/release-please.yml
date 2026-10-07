@@ -3,14 +3,14 @@ name: Release
 on:
   push:
     branches: [main]
-  # Manual entry point for publishing an existing tag. Two cases it covers:
-  # bootstrapping the first PyPI release from a tag Release Please did not create,
-  # and retrying a publish that failed after the tag and GitHub Release already
+  # Manual entry point for building an existing tag. Two cases it covers:
+  # bootstrapping a release from a tag Release Please did not create, and
+  # retrying a build that failed after the tag and GitHub Release already
   # existed (Release Please will not re-run for an already-released version).
   workflow_dispatch:
     inputs:
       tag:
-        description: "Existing tag to build and publish, e.g. v0.1.0"
+        description: "Existing tag to build, e.g. v0.1.0"
         required: true
         type: string
 
@@ -40,7 +40,12 @@ jobs:
           manifest-file: .release-please-manifest.json
 
   publish:
-    name: Build and publish to PyPI
+    # PyPI publishing is ON HOLD pending the PyPI account/organization setup.
+    # Everything below still runs: the distribution is built, its metadata is
+    # validated, and the artifacts are attached to the GitHub Release. Only the
+    # upload to PyPI is disabled. To re-enable, uncomment the three blocks marked
+    # "PYPI ON HOLD" below. Nothing else needs to change.
+    name: Build and attach to GitHub Release
     needs: release-please
     # always() is required: on workflow_dispatch the release-please job is skipped,
     # and a skipped dependency would otherwise skip this job too.
@@ -51,11 +56,14 @@ jobs:
     # Pure-Python wheel with no compiled extensions, so the artifact is identical to one
     # built on macOS. Tests still run on macos-latest in ci.yml.
     runs-on: ubuntu-latest
-    environment:
-      name: pypi
-      url: https://pypi.org/p/keychain-cli
+    # PYPI ON HOLD (1/3): needs the `pypi` GitHub environment to exist.
+    # environment:
+    #   name: pypi
+    #   url: https://pypi.org/p/keychain-cli
     permissions:
-      id-token: write # PyPI Trusted Publishing (OIDC)
+      # PYPI ON HOLD (2/3): OIDC token for Trusted Publishing. Kept off until
+      # publishing resumes so the job runs with no more privilege than it needs.
+      # id-token: write # PyPI Trusted Publishing (OIDC)
       contents: write # attach artifacts to the GitHub Release
     env:
       TAG: ${{ inputs.tag || needs.release-please.outputs.tag_name }}
@@ -76,8 +84,9 @@ jobs:
       - name: Check distribution metadata
         run: uvx twine check --strict dist/*
 
-      - name: Publish to PyPI
-        uses: pypa/gh-action-pypi-publish@v1.14.2
+      # PYPI ON HOLD (3/3): the actual upload.
+      # - name: Publish to PyPI
+      #   uses: pypa/gh-action-pypi-publish@v1.14.2
 
       - name: Attach distribution to GitHub Release
         run: gh release upload "$TAG" dist/* --clobber
