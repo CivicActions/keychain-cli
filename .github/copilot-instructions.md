@@ -31,11 +31,15 @@ Release Please parses. It must be valid on its own.
 ## Never edit versions or the changelog by hand
 
 Release Please owns the version in `pyproject.toml`, `__version__` in
-`src/keychain_cli/__init__.py`, the `"."` entry in `.release-please-manifest.json`, and all of
-`CHANGELOG.md`. It rewrites them together in a release pull request.
+`src/keychain_cli/__init__.py`, the `keychain-cli` package version in `uv.lock`, the `"."` entry in
+`.release-please-manifest.json`, and all of `CHANGELOG.md`. It rewrites them together in a release
+pull request.
 
 The `__version__` line carries a `# x-release-please-version` annotation — that comment is
 load-bearing. Do not remove it. `tests/unit/test_version_sync.py` fails if these drift.
+
+Regenerating `uv.lock` with `uv lock` after a dependency change is fine and expected; editing the
+`version` under its `name = "keychain-cli"` entry is not.
 
 ## The security invariant
 

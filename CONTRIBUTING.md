@@ -12,12 +12,18 @@ Releases are automated. **Never hand-edit any of these:**
 |---|---|
 | `pyproject.toml` | `[project] version` |
 | `src/keychain_cli/__init__.py` | `__version__` |
+| `uv.lock` | the `version` of the `keychain-cli` package entry |
 | `.release-please-manifest.json` | the `"."` entry |
 | `CHANGELOG.md` | anything |
 
-[Release Please](https://github.com/googleapis/release-please) owns all four. It derives the next
+[Release Please](https://github.com/googleapis/release-please) owns all five. It derives the next
 version from your commit messages and rewrites them together in a release pull request. Editing one
 by hand desynchronises them; `tests/unit/test_version_sync.py` will fail if you do.
+
+`uv.lock` is the odd one out: you *do* regenerate it by hand whenever you change a dependency
+(`uv lock`, then commit it). What you must not touch is the `version` under its
+`name = "keychain-cli"` entry — `uv.lock` records the project's own version alongside its
+dependencies, and `uv lock --check` in CI fails if that falls out of step with `pyproject.toml`.
 
 ## Development setup
 
@@ -171,6 +177,22 @@ Branch names follow `<type>/<short-description>`, e.g. `feat/json-output`, `fix/
 
 If no commit since the last release bumps the version, no release pull request appears. That is
 correct behaviour, not a failure.
+
+### If you ever edit `release-please-config.json`
+
+One line in it looks like a typo and is not:
+
+```json
+"jsonpath": "$.package[?(@.name.value=='keychain-cli')].version"
+```
+
+Release Please parses TOML with a format-preserving parser that wraps every scalar as
+`{"start": …, "end": …, "value": …}` so it can splice the file by byte range instead of
+re-serialising it (which is why updating `uv.lock` leaves its generated header comment and
+formatting intact). The consequence is that a filter has to compare `@.name.value`. The
+natural-looking `@.name` matches nothing, and a JSONPath that matches nothing is a **silent
+no-op** — the release pull request would simply not contain the `uv.lock` change, and CI would
+fail on `uv lock --check`. `tests/unit/test_version_sync.py` pins the expression for this reason.
 
 ### Building a tag by hand
 
