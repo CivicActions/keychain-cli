@@ -25,8 +25,10 @@ Any change to a command name, flag, exit code, or output format is breaking — 
 after the type/scope or a `BREAKING CHANGE:` footer. Security fixes use `fix(security): ...`, never
 a `security:` type, because a non-standard type produces no version bump.
 
-Pull requests are squash-merged, so the pull request title is what lands on `main` and what
-Release Please parses. It must be valid on its own.
+Pull requests are merge-committed, **not** squashed. Every commit on the branch lands on `main` and
+is parsed by Release Please, so every commit message must stand on its own — each one is a
+changelog candidate. The pull request title must also be a valid Conventional Commit, but it is not
+the only message that matters.
 
 ## Never edit versions or the changelog by hand
 

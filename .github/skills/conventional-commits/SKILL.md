@@ -26,8 +26,9 @@ Release Please parses the commit history on `main` to decide the next version, g
 work that happened — it is **the input to an automated release**. Mislabel a user-visible fix as
 `chore` and it ships to nobody, because `chore` produces no version bump and no changelog entry.
 
-Pull requests are squash-merged, so **the pull request title is the commit that lands on `main`.**
-Perfect commits on a branch do not rescue a malformed pull request title.
+Pull requests are merge-committed, **not** squashed, so **every commit you write lands on `main`
+and is parsed.** There is no squash step to absorb a careless message — each commit is a changelog
+candidate on its own.
 
 ## Format
 
@@ -45,8 +46,9 @@ someone using the tool.
 Note that the two enforcement gates differ. The local `commit-msg` hook
 (`conventional-pre-commit`) checks only the type and header shape — it has no option for subject
 casing. The `Commit Lint` workflow checks the pull request title and additionally rejects a
-capitalised subject or a trailing period. Since pull requests are squash-merged, the title is the
-message that survives; write both to the stricter standard.
+capitalised subject or a trailing period. Because commits are merge-committed rather than squashed,
+the weaker gate is the one guarding most of what reaches `main`: hold branch commits to the
+stricter standard yourself, since nothing downstream will.
 
 ## Picking a type
 
@@ -151,6 +153,7 @@ Before committing anything security-relevant:
 3. Lowercase subject, imperative, no trailing period?
 4. Does the subject describe the change, not the file touched?
 5. If it touches a command name, flag, exit code, or output format — is it marked breaking?
-6. If this becomes the pull request title, does it still stand alone?
+6. This commit lands on `main` as written and is a changelog candidate on its own — does it stand
+   up without the pull request around it for context?
 7. Did you leave `pyproject.toml` version, `__version__`, the `keychain-cli` version in `uv.lock`,
    `.release-please-manifest.json`, and `CHANGELOG.md` untouched?

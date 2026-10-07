@@ -148,16 +148,30 @@ Two checks run, and they are not identical:
 | `amannn/action-semantic-pull-request` | `Commit Lint` workflow, on the PR title | all of the above, **plus** a capitalised subject or a trailing period |
 
 The local hook cannot check subject casing — it has no option for it. So
-`feat: Add JSON output.` passes locally and fails on the pull request title. That is tolerable
-because branch commits are squashed away; the pull request title is the only message that survives
-onto `main`. Write both to the same standard anyway.
+`feat: Add JSON output.` passes locally and fails on the pull request title. Fix it in both places:
+under merge commits every commit on your branch lands on `main` and is read by Release Please, so a
+sloppy branch commit is not absorbed by the pull request title the way it would be under squashing.
 
 ## Pull requests
 
-Pull requests are **squash-merged**, which means **the pull request title becomes the commit
-message on `main`** — and that is the string Release Please reads. The title must be a valid
-Conventional Commit even when the individual commits on your branch already are. The `Commit Lint`
-workflow enforces this.
+Pull requests are **merge-committed, not squashed.** Every commit on your branch lands on `main`
+exactly as you wrote it, and Release Please reads **all of them** — not just the pull request
+title.
+
+This is deliberate. The project prefers a public history that shows how the work actually happened
+over a tidy one commit per pull request. It also preserves changelog entries that squashing would
+silently drop: if a pull request titled `ci: retune the matrix` contains a `fix:` commit, squashing
+would reduce it to a `ci:` commit and that fix would never reach the changelog.
+
+The trade-off, and the thing to actually watch: **every commit you write is a changelog
+candidate.** A branch that goes `feat: add --json` → `fix: typo in --json` publishes two entries,
+the second describing a bug no released version ever had. Before asking for a merge, tidy the
+branch — `git rebase -i` to squash fixups into the commit they fix, reword anything vague. Keep the
+commits that represent real steps; fold away the ones that only represent you changing your mind.
+
+The pull request title still has to be a valid Conventional Commit — the `Commit Lint` workflow
+enforces it, and the title is what a reader sees in the merge commit — but it is no longer the only
+message that matters.
 
 Branch names follow `<type>/<short-description>`, e.g. `feat/json-output`, `fix/locked-keychain`.
 
