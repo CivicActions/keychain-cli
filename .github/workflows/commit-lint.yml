@@ -14,8 +14,11 @@ jobs:
     permissions:
       pull-requests: read
     steps:
-      # Pull requests are squash-merged, so the PR title becomes the commit message on
-      # main. That is the string Release Please parses to decide the next version.
+      # Pull requests are merge-committed, not squashed, so this title is not the only
+      # message Release Please reads -- every commit on the branch lands on main and is
+      # parsed too. This gate still matters because the title heads the merge commit and
+      # is the one message checked for subject casing, which the local commit-msg hook
+      # cannot check.
       - uses: amannn/action-semantic-pull-request@v6
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
