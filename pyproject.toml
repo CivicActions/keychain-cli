@@ -98,3 +98,8 @@ disable = [
 strict = true
 python_version = "3.11"
 files = ["src", "tests"]
+
+[tool.bandit]
+# B101 (assert) is pytest's standard assertion idiom; only enforce it outside tests.
+# .venv is third-party dependency code, not ours to fix.
+exclude_dirs = ["tests", "specs", ".venv"]
