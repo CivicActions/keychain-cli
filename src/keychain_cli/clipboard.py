@@ -5,7 +5,7 @@ Deliberate exposure channel governed by SECURITY-EXCEPTIONS.md entry CLIP-001.
 
 from __future__ import annotations
 
-import subprocess
+import subprocess  # nosec B404 - CLIP-001: argv list, never a shell string
 import sys
 from collections.abc import Callable
 from typing import Any
@@ -25,7 +25,7 @@ def clear_now(spawn_fn: SpawnFn = subprocess.Popen) -> None:
     try:
         proc = spawn_fn(["/usr/bin/pbcopy"], stdin=subprocess.PIPE)
         proc.communicate(b"")
-    except Exception:  # noqa: BLE001
+    except Exception:  # noqa: BLE001 # nosec B110 - CLIP-001: best-effort clear, failure is silent
         pass
 
 

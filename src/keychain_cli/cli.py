@@ -446,10 +446,10 @@ def main(
 
 def _default_exec(file: str, argv: Sequence[str], env: Mapping[str, str]) -> None:
     """Replace this process with ``argv``. Only ``run`` will call it; no shell is involved."""
-    os.execvpe(file, list(argv), dict(env))  # noqa: S606 - argv list, never a shell string
+    os.execvpe(file, list(argv), dict(env))  # noqa: S606 # nosec B606 - argv list, never a shell string
 
 
 def _default_spawn(*args: Any, **kwargs: Any) -> Any:
-    import subprocess  # noqa: PLC0415 - lazy; only the clipboard path spawns processes
+    import subprocess  # noqa: PLC0415 # nosec B404 - lazy; only the clipboard path spawns processes
 
-    return subprocess.Popen(*args, **kwargs)  # noqa: S603 - argv list, never a shell string
+    return subprocess.Popen(*args, **kwargs)  # noqa: S603 # nosec B603 - argv list, never a shell string

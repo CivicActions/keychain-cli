@@ -7,7 +7,7 @@ the clipboard only if its contents still match the expected SHA-256 digest.
 from __future__ import annotations
 
 import hashlib
-import subprocess
+import subprocess  # nosec B404 - CLIP-001: argv list, never a shell string
 import sys
 import time
 
@@ -26,11 +26,13 @@ def main() -> int:
     time.sleep(seconds)
 
     try:
-        current = subprocess.check_output(["/usr/bin/pbpaste"])  # noqa: S603
+        current = subprocess.check_output(["/usr/bin/pbpaste"])  # noqa: S603 # nosec B603 - CLIP-001
         if hashlib.sha256(current).hexdigest() == raw_digest:
-            proc = subprocess.Popen(["/usr/bin/pbcopy"], stdin=subprocess.PIPE)  # noqa: S603
+            proc = subprocess.Popen(  # noqa: S603 # nosec B603 - CLIP-001
+                ["/usr/bin/pbcopy"], stdin=subprocess.PIPE
+            )
             proc.communicate(b"")
-    except Exception:  # noqa: BLE001
+    except Exception:  # noqa: BLE001 # nosec B110 - CLIP-001: best-effort clear, failure is silent
         pass
 
     return 0
