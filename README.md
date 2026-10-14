@@ -5,13 +5,18 @@ instead of keeping a plaintext `.env` file.
 
 ## What it is
 
-A small Python command-line tool for macOS. Each project gets a *namespace* in your login
-Keychain holding named environment variables. You store values at a hidden prompt, then run
-your development command through the tool, which places the variables in that command's
-environment and nowhere else. Your shell is never modified. Nothing is written to disk.
+`keychain-cli` is a small, security-focused command-line tool for storing secrets in the macOS
+Keychain and injecting them into a single command only when needed. It is designed for local
+development workflows where you need API tokens, database passwords, or other environment
+variables available to an application, but do not want those values written to disk or permanently
+exported into your shell session.
 
-Requires macOS 13 or later and Python 3.11 or later. There is no fallback storage on other
-platforms; the tool exits with code 6.
+Each project gets a *namespace* in your login Keychain holding named environment variables. You
+store values at a hidden prompt, then run your development command through the tool, which places
+the variables in that command's environment and nowhere else. Your shell is never modified.
+Nothing is written to disk.
+
+Requires macOS 13 or later and Python 3.11 or later.
 
 ## Install
 
@@ -74,31 +79,15 @@ variables = [
 ]
 ```
 
-### Onboarding and drift detection
+This gives the team a shared contract for local configuration without storing any secret values in the repository.
 
-1. Check for missing variables without storing anything:
+- Developers can run `keychain-cli check` to see what is missing
+- Developers can run `keychain-cli init` to fill only missing values
+- Developers can run their code without typing the namespace, e.g.:
+   - `keychain-cli run -- npm run dev`
+- CI and documentation can refer to variable names consistently
 
-   ```sh
-   keychain-cli check
-   ```
-
-   Exits `0` if all variables are present, or `10` if any are missing (listing the missing names).
-
-2. Initialize missing secrets:
-
-   ```sh
-   keychain-cli init
-   ```
-
-   Prompts only for declared variables not yet in your Keychain. Existing values are never touched.
-
-3. Run without typing the namespace:
-
-   ```sh
-   keychain-cli run -- npm run dev
-   ```
-
-   The tool infers `my-project` from `.keychain-cli.toml` in the current directory.
+Good practice: commit variable names, never secret values. The manifest is for structure only.
 
 ## Commands
 
@@ -112,8 +101,7 @@ variables = [
 | `init [<namespace>]` | Prompt for missing secrets declared in `.keychain-cli.toml` |
 | `check [<namespace>]` | Report which declared secrets are missing |
 
-For full command documentation, options, and exit codes, run `keychain-cli <command> --help`
-or see `specs/001-keychain-secret-manager/contracts/cli.md`.
+For full command documentation, options, and exit codes, run `keychain-cli <command> --help`.
 
 ## Exit codes
 
