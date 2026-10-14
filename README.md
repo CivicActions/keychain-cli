@@ -40,9 +40,20 @@ To uninstall:
 uv tool uninstall keychain-cli
 ```
 
-## First secret in 60 seconds
+## Create namespace with secrets
 
-1. Store secrets in a project namespace:
+Either:
+
+- Import existing key-value pairs from a local `.env` file into `my-project` namespace:
+
+   ```sh
+   keychain-cli import my-project .env
+   ```
+- and remove the plaintext secrets `.env` file
+
+or:
+
+- Store secrets directly into a project namespace:
 
    ```sh
    keychain-cli set my-project API_TOKEN DB_PASSWORD
@@ -56,7 +67,7 @@ uv tool uninstall keychain-cli
    stored: API_TOKEN, DB_PASSWORD
    ```
 
-2. Run your command with secrets injected:
+Now you can run your command with secrets injected:
 
    ```sh
    keychain-cli run my-project -- npm run dev
@@ -79,15 +90,16 @@ variables = [
 ]
 ```
 
-This gives the team a shared contract for local configuration without storing any secret values in the repository.
+This gives the team a shared contract for local configuration variable names without storing any secret values in the repository. Developers can run:
 
-- Developers can run `keychain-cli check` to see what is missing
-- Developers can run `keychain-cli init` to fill only missing values
-- Developers can run their code without typing the namespace, e.g.:
-   - `keychain-cli run -- npm run dev`
-- CI and documentation can refer to variable names consistently
+- `keychain-cli check` to see what is missing
+- `keychain-cli init` to fill only missing values
 
-Good practice: commit variable names, never secret values. The manifest is for structure only.
+Now they can run their code without typing the namespace, e.g.:
+
+```sh
+keychain-cli run -- npm run dev
+```
 
 ## Commands
 
