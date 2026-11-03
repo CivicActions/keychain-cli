@@ -192,8 +192,21 @@ project owned by that organization.
 
 In GitHub repository **Settings > Environments**, create the `pypi` environment and configure any
 required reviewers or deployment restrictions. It must allow the release tags and the branch used
-for manual dispatch. The repository also needs a `RELEASE_PLEASE_TOKEN` secret with access to
-create release pull requests and GitHub releases; this is separate from PyPI authentication.
+for manual dispatch.
+
+Release Please authenticates with the CivicActions GitHub App installed on this repository.
+Provide its client ID as the Actions variable `RELEASE_APP_CLIENT_ID` and its generated PEM
+private key as the Actions secret `RELEASE_APP_PRIVATE_KEY`. Organization settings may provide
+both, with access restricted to selected repositories. This App key is not an SSH signing key.
+The App needs **Contents**, **Pull requests**, and **Issues** read/write permissions; it does not
+need webhooks, a hosted service, or a separate codebase.
+
+The workflow creates a short-lived installation token scoped to this repository. The stock
+Release Please action uses it to create release branches, PRs, labels, and GitHub releases, and
+the normal PR CI runs automatically. A follow-up check requires GitHub to report newly created
+or updated release-PR head commits as verified. Required-signature rules stay enabled. The old
+`RELEASE_PLEASE_TOKEN` and `RELEASE_PLEASE_SSH_SIGNING_KEY` secrets are not used by this workflow.
+PyPI authentication remains separate and uses OIDC through the `pypi` environment.
 
 If no commit since the last release bumps the version, no release pull request appears. That is
 correct behaviour, not a failure.
