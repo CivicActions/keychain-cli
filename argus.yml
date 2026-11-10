@@ -1,4 +1,4 @@
-# yaml-language-server: $schema=https://raw.githubusercontent.com/huntridge-labs/argus/1.12.6/argus-config.schema.json
+# yaml-language-server: $schema=https://raw.githubusercontent.com/huntridge-labs/argus/1.14.2/argus-config.schema.json
 # Argus Security Scanner Configuration
 # Docs: https://huntridge-labs.github.io/argus/
 
