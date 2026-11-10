@@ -47,7 +47,7 @@ jobs:
           fail_on_severity: high
 
       - name: Run OpenGrep SAST scanner
-        uses: huntridge-labs/argus/.github/actions/scanner-opengrep@eec3626bebc706dd4225eeec1c55c5f # 1.14.2
+        uses: huntridge-labs/argus/.github/actions/scanner-opengrep@eec3626bebc706dd4225eeec1c55e6f623c20c5f # 1.14.2
         continue-on-error: true
         with:
           enable_code_security: true
