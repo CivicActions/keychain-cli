@@ -76,9 +76,7 @@ jobs:
       url: https://pypi.org/p/keychain-cli
     permissions:
       id-token: write # PyPI Trusted Publishing (OIDC)
-      contents: write # attach artifacts to the GitHub Release
-    env:
-      TAG: ${{ inputs.tag || needs.release-please.outputs.tag_name }}
+      contents: read
     steps:
       - uses: actions/checkout@v7
         with:
@@ -100,8 +98,3 @@ jobs:
         uses: pypa/gh-action-pypi-publish@v1.14.3
         with:
           skip-existing: true
-
-      - name: Attach distribution to GitHub Release
-        run: gh release upload "$TAG" dist/* --clobber
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
