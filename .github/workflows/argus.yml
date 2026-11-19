@@ -31,7 +31,7 @@ jobs:
           pip install "argus-security==1.14.2" "bandit[toml,sarif]"
 
       - name: Run Gitleaks secret detection
-        uses: huntridge-labs/argus/.github/actions/scanner-gitleaks@eec3626bebc706dd4225eeec1c55e6f623c20c5f # 1.14.2
+        uses: huntridge-labs/argus/.github/actions/scanner-gitleaks@9d4652ce8cd6f3041e77e4702cc9e084a3b6682c # 1.15.0
         continue-on-error: true
         with:
           enable_code_security: true
@@ -40,14 +40,14 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Run Bandit Python SAST scanner
-        uses: huntridge-labs/argus/.github/actions/scanner-bandit@eec3626bebc706dd4225eeec1c55e6f623c20c5f # 1.14.2
+        uses: huntridge-labs/argus/.github/actions/scanner-bandit@9d4652ce8cd6f3041e77e4702cc9e084a3b6682c # 1.15.0
         continue-on-error: true
         with:
           enable_code_security: true
           fail_on_severity: high
 
       - name: Run OpenGrep SAST scanner
-        uses: huntridge-labs/argus/.github/actions/scanner-opengrep@eec3626bebc706dd4225eeec1c55e6f623c20c5f # 1.14.2
+        uses: huntridge-labs/argus/.github/actions/scanner-opengrep@9d4652ce8cd6f3041e77e4702cc9e084a3b6682c # 1.15.0
         continue-on-error: true
         with:
           enable_code_security: true
