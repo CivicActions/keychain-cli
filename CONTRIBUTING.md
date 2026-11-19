@@ -211,6 +211,25 @@ PyPI authentication remains separate and uses OIDC through the `pypi` environmen
 If no commit since the last release bumps the version, no release pull request appears. That is
 correct behaviour, not a failure.
 
+### Requesting an explicit release version
+
+To request a specific version, or if a release is desired but the type of change does not
+automatically bump the version, add a `Release-As:` footer to a Conventional Commit. For
+example, when committing a documentation update:
+
+```text
+docs: explain explicit release requests
+
+Release-As: 0.1.3
+```
+
+The footer overrides the calculated version.
+
+Before pushing, run `git log -1 --format=%B` and confirm the footer is present in the commit
+message, not just the PR description. Merge the request PR into `main` using a merge commit, then
+review and merge the generated release PR after its checks pass. Release Please still owns all
+version and changelog edits; do not make those changes yourself.
+
 ### If you ever edit `release-please-config.json`
 
 One line in it looks like a typo and is not:
