@@ -182,7 +182,7 @@ Branch names follow `<type>/<short-description>`, e.g. `feat/json-output`, `fix/
    request titled `chore(main): release X.Y.Z`. That pull request contains the version bumps and the
    generated changelog section — review it, don't edit it.
 3. Merging the release pull request tags `vX.Y.Z`, publishes a GitHub Release, builds the sdist and
-  wheel, publishes them to PyPI, and attaches them to that Release.
+  wheel, and publishes them to PyPI.
 
 PyPI uses Trusted Publishing with GitHub Actions OIDC; no PyPI API token is needed. The publisher
 must match owner `CivicActions`, repository `keychain-cli`, workflow `release-please.yml`, and
@@ -252,15 +252,15 @@ The `Release` workflow also has a `workflow_dispatch` trigger taking an existing
 that tag and runs the same path, skipping Release Please entirely. Two uses:
 
 - **Bootstrapping.** The `v0.1.0` tag was created by hand, not by Release Please, so nothing
-  automatically built and attached its artifacts. Dispatching the updated workflow from `main`
-  against an existing tag builds it, publishes it to PyPI, and attaches its artifacts.
+  automatically built or published it. Dispatching the updated workflow from `main`
+  against an existing tag builds it and publishes it to PyPI.
 - **Retrying.** If publishing fails after the tag and GitHub Release already exist, Release Please
   will not re-run for a version it considers released. Dispatch against the tag instead. Files
   already uploaded to PyPI are skipped; PyPI does not allow replacing a published distribution.
 
 After the publishing workflow is merged to `main`, open **Actions > Release > Run workflow**,
 select branch `main`, and enter the existing tag (for example, `v0.1.1`). The corresponding GitHub
-Release must already exist for the artifact attachment step. Approve the `pypi` deployment if
-required by the environment's protection rules.
+Release does not need to exist. Approve the `pypi` deployment if required by the environment's
+protection rules.
 
 It cannot be used to build something that is not already tagged, and it never invents a version.
